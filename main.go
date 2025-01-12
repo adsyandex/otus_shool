@@ -21,8 +21,5 @@ func createChessBoard(size int) string {
 }
 
 func main() {
-	var size int
-	fmt.Print("Введите размер шахматной доски: ")
-	fmt.Scan(&size)
-	fmt.Println(createChessBoard(size))
+	fmt.Println("Hello Go Developmen in Otus!")
 }
