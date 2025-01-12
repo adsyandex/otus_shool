@@ -21,5 +21,5 @@ func createChessBoard(size int) string {
 }
 
 func main() {
-	fmt.Println("Hello Go Developmen in Otus!")
+	fmt.Println("Hello Vitaliy, Go Development, student at Otus!")
 }
