@@ -26,4 +26,3 @@ func main() {
 	fmt.Scan(&size)
 	fmt.Println(createChessBoard(size))
 }
-
