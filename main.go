@@ -1,63 +1,59 @@
-/*package main
+package main
 
 import (
-    "fmt"
-    "strings"
+	"fmt"
+	"log"
+	"time"
+
+	"example.com/otus_shool/project/internal/model/account"
+	"example.com/otus_shool/project/internal/model/task"
+	"example.com/otus_shool/project/internal/storage"
 )
 
-// createChessBoard создает шахматную доску заданного размера с использованием strings.Builder.
-func createChessBoard(size int) string {
-    var board strings.Builder
-    board.Grow(size * (size + 1)) // Оптимизация: заранее выделяем память
-
-    for row := 0; row < size; row++ {
-        for col := 0; col < size; col++ {
-            if (row+col)%2 == 0 {
-                board.WriteByte(' ') // Белая клетка
-            } else {
-                board.WriteByte('#') // Чёрная клетка
-            }
-        }
-        board.WriteByte('\n') // Переход на новую строку
-    }
-    return board.String()
-}
-
 func main() {
-    var size int
-    fmt.Print("Введите размер шахматной доски: ")
-    fmt.Scan(&size)
-    fmt.Println(createChessBoard(size))
+	// Создаем пользователя
+	user := account.User{ID: 1, Username: "admin"}
+
+	// Устанавливаем пароль
+	err := user.SetPassword("securepassword")
+	if err != nil {
+		log.Fatal("Ошибка хеширования пароля")
+	}
+
+	// Проверяем пароль
+	if user.CheckPassword("securepassword") {
+		fmt.Println("Пароль верный")
+	} else {
+		fmt.Println("Неверный пароль")
+	}
+
+	// Создаем задачи и связываем с пользователем (по UserID)
+	t1 := task.Task{ID: 1, UserID: user.ID, Title: "Написать код", Description: "Реализовать структуры"}
+	t1.SetCreatedAt(time.Now())
+
+	t2 := task.Task{ID: 2, UserID: user.ID, Title: "Проверить код", Description: "Протестировать функционал"}
+	t2.SetCreatedAt(time.Now())
+
+	tasks := []task.Task{t1, t2}
+
+	// Инициализируем файловое хранилище
+	storage := storage.NewFileStorage("tasks.json")
+
+	// Сохраняем задачи в файл
+	err = storage.SaveTasks(tasks)
+	if err != nil {
+		log.Fatalf("Ошибка при сохранении задач: %v", err)
+	}
+
+	// Загружаем задачи из файла
+	loadedTasks, err := storage.LoadTasks()
+	if err != nil {
+		log.Fatalf("Ошибка при загрузке задач: %v", err)
+	}
+
+	// Вывод загруженных задач
+	fmt.Println("Загруженные задачи:")
+	for _, t := range loadedTasks {
+		fmt.Printf("- [%d] Пользователь %d: %s - %s (Создана: %v)\n", t.ID, t.UserID, t.Title, t.Description, t.CreatedAt())
+	}
 }
-
-
-
-
-/*package main
-
-import (
-    "fmt"
-)
-
-// createChessBoard создает шахматную доску заданного размера.
-func createChessBoard(size int) string {
-    board := ""
-    for row := 0; row < size; row++ {
-        for col := 0; col < size; col++ {
-            if (row+col)%2 == 0 {
-                board += " " // Белая клетка
-            } else {
-                board += "#" // Чёрная клетка
-            }
-        }
-        board += "\n" // Переход на новую строку
-    }
-    return board
-}
-
-func main() {
-    var size int
-    fmt.Print("Введите размер шахматной доски: ")
-    fmt.Scan(&size)
-    fmt.Println(createChessBoard(size))
-}*/
