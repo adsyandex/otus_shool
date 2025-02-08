@@ -1,4 +1,4 @@
-package main
+/*package main
 
 import (
     "fmt"
@@ -28,7 +28,7 @@ func main() {
     fmt.Print("Введите размер шахматной доски: ")
     fmt.Scan(&size)
     fmt.Println(createChessBoard(size))
-}
+}*/
 
 
 
