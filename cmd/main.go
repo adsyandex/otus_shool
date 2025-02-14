@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"time"
 
-	"project-root/internal/repository"
-	"project-root/internal/service"
+	"github.com/adsyandex/otus_shool/cmd/internal/repository"
+	"github.com/adsyandex/otus_shool/cmd/internal/service"
+
 )
 
 func main() {

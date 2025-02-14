@@ -1,3 +1,3 @@
-module github.com/adsyandex/otus_shool/tree/interface
+module github.com/adsyandex/otus_shool
 
 go 1.23.4

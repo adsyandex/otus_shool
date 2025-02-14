@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"sync"
 
-	"project-root/internal/model"
+	"github.com/adsyandex/otus_shool/cmd/internal/model"
+
 )
 
 var (

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"project-root/internal/model"
-	"project-root/internal/repository"
+	"github.com/adsyandex/otus_shool/cmd/internal/model"
+	"github.com/adsyandex/otus_shool/cmd/internal/repository"
 )
 
 // StartDataGeneration генерирует данные и передает их в репозиторий по таймеру
