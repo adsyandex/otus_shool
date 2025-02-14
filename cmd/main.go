@@ -10,22 +10,16 @@ import (
 )
 
 func main() {
-	fmt.Println("Запуск генерации данных...")
-	service.StartDataGeneration()
+	fmt.Println("Запуск генерации задач...")
 
-	// Запускаем функцию в отдельной горутине
-	go service.StartDataGeneration()
+	// Запускаем генерацию задач в фоновом режиме
+	go service.StartTaskGeneration()
 
-	// Ожидание, пока накопятся данные
+	// Ожидаем 10 секунд, пока накопятся данные
 	time.Sleep(10 * time.Second)
 
-	fmt.Println("\nСписок пользователей:")
-	for _, user := range repository.GetUsers() {
-		fmt.Println(user)
-	}
-
-	fmt.Println("\nСписок продуктов:")
-	for _, product := range repository.GetProducts() {
-		fmt.Println(product)
+	fmt.Println("\nСписок задач:")
+	for _, task := range repository.GetTasks() {
+		fmt.Println(task)
 	}
 }
