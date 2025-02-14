@@ -13,6 +13,9 @@ func main() {
 	fmt.Println("Запуск генерации данных...")
 	service.StartDataGeneration()
 
+	// Запускаем функцию в отдельной горутине
+	go service.StartDataGeneration()
+
 	// Ожидание, пока накопятся данные
 	time.Sleep(10 * time.Second)
 
