@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/adsyandex/otus_shool/cmd/internal/repository"
-	"github.com/adsyandex/otus_shool/cmd/internal/service"
+	"github.com/adsyandex/otus_shool/internal/repository"
+	"github.com/adsyandex/otus_shool/internal/service"
 
 )
 

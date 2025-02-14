@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/adsyandex/otus_shool/cmd/internal/model"
-	"github.com/adsyandex/otus_shool/cmd/internal/repository"
+	"github.com/adsyandex/otus_shool/internal/model"
+	"github.com/adsyandex/otus_shool/internal/repository"
 )
 
 // StartTaskGeneration создаёт задачи и передаёт в репозиторий

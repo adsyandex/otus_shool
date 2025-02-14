@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/adsyandex/otus_shool/cmd/internal/model"
+	"github.com/adsyandex/otus_shool/internal/model"
 
 )
 
