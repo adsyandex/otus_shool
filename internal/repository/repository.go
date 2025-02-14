@@ -13,12 +13,18 @@ var (
 	mu    sync.Mutex
 )
 
-// AddTask добавляет задачу в хранилище
-func AddTask(task model.Task) {
+// AddEntity принимает интерфейс и распределяет объект в нужный слайс
+func AddEntity(e interface{}) {
 	mu.Lock()
 	defer mu.Unlock()
-	tasks = append(tasks, task)
-	fmt.Println("Добавлена задача:", task)
+
+	switch v := e.(type) {
+	case model.Task:
+		tasks = append(tasks, v)
+		fmt.Println("Добавлена задача:", v)
+	default:
+		fmt.Println("Неизвестный тип данных, не добавлено")
+	}
 }
 
 // GetTasks возвращает список задач

@@ -8,21 +8,19 @@ import (
 	"github.com/adsyandex/otus_shool/internal/repository"
 )
 
-// StartTaskGeneration создаёт задачи и передаёт в репозиторий
+// StartTaskGeneration создаёт задачи в основном потоке
 func StartTaskGeneration() {
-	go func() {
-		id := 1
-		for {
-			task := model.Task{
-				ID:     id,
-				Title:  fmt.Sprintf("Задача %d", id),
-				Status: "в процессе",
-			}
-
-			repository.AddTask(task)
-
-			id++
-			time.Sleep(2 * time.Second)
+	id := 1
+	for {
+		task := model.Task{
+			ID:     id,
+			Title:  fmt.Sprintf("Задача %d", id),
+			Status: "в процессе",
 		}
-	}()
+
+		repository.AddEntity(task) // Теперь передаём интерфейс
+
+		id++
+		time.Sleep(2 * time.Second) // Пауза перед созданием следующей задачи
+	}
 }

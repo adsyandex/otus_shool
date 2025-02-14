@@ -9,13 +9,14 @@ import (
 
 )
 
+
 func main() {
 	fmt.Println("Запуск генерации задач...")
 
-	// Запускаем генерацию задач в фоновом режиме
-	go service.StartTaskGeneration()
+	// Запускаем генерацию задач в основном потоке
+	service.StartTaskGeneration()
 
-	// Ожидаем 10 секунд, пока накопятся данные
+	// Через 10 секунд выводим задачи
 	time.Sleep(10 * time.Second)
 
 	fmt.Println("\nСписок задач:")
