@@ -1,6 +1,6 @@
 package storage
 
-import "todo-app/internal/task"
+import "github.com/adsyandex/otus_shool/internal/task"
 
 // Storage определяет интерфейс для работы с хранилищем задач
 type Storage interface {
