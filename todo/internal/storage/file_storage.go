@@ -1,101 +1,52 @@
 package storage
 
 import (
-    "encoding/json"
-    //"errors"
-    "os"
-    "sync"
-    "github.com/adsyandex/otus_shool/internal/task"
-    
+	"encoding/json"
+	"os"
+	"todo-app/internal/task"
 )
 
-// FileStorage реализует Storage с использованием файла JSON.
+// FileStorage реализует Storage с использованием файла
 type FileStorage struct {
-    filePath string
-    tasks    []task.Task
-    mu       sync.Mutex
+	filename string
 }
 
-// NewFileStorage создает новый экземпляр FileStorage.
-func NewFileStorage(filePath string) *FileStorage {
-    fs := &FileStorage{filePath: filePath}
-    fs.loadTasks()
-    return fs
+// NewFileStorage создает новый экземпляр FileStorage
+func NewFileStorage(filename string) *FileStorage {
+	return &FileStorage{filename: filename}
 }
 
-// loadTasks загружает задачи из файла.
-func (fs *FileStorage) loadTasks() {
-    data, err := os.ReadFile(fs.filePath)
-    if err != nil {
-        fs.tasks = []task.Task{}
-        return
-    }
-    json.Unmarshal(data, &fs.tasks)
+// Save сохраняет задачу в файл
+func (fs *FileStorage) Save(task task.Task) error {
+	tasks, err := fs.Load()
+	if err != nil {
+		return err
+	}
+
+	tasks = append(tasks, task)
+
+	data, err := json.Marshal(tasks)
+	if err != nil {
+		return err
+	}
+
+	return os.WriteFile(fs.filename, data, 0644)
 }
 
-// saveTasks сохраняет задачи в файл.
-func (fs *FileStorage) saveTasks() error {
-    data, err := json.Marshal(fs.tasks)
-    if err != nil {
-        return err
-    }
-    return os.WriteFile(fs.filePath, data, 0644)
-}
+// Load загружает задачи из файла
+func (fs *FileStorage) Load() ([]task.Task, error) {
+	data, err := os.ReadFile(fs.filename)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return []task.Task{}, nil
+		}
+		return nil, err
+	}
 
-// SaveTask сохраняет задачу.
-func (fs *FileStorage) SaveTask(t task.Task) error {
-    fs.mu.Lock()
-    defer fs.mu.Unlock()
-    fs.tasks = append(fs.tasks, t)
-    return fs.saveTasks()
-}
+	var tasks []task.Task
+	if err := json.Unmarshal(data, &tasks); err != nil {
+		return nil, err
+	}
 
-// GetTasks возвращает все задачи.
-func (fs *FileStorage) GetTasks() ([]task.Task, error) {
-    return fs.tasks, nil
+	return tasks, nil
 }
-
-// GetTaskByID возвращает задачу по ID.
-func (fs *FileStorage) GetTaskByID(id int) (task.Task, error) {
-    for _, t := range fs.tasks {
-        if t.ID == id {
-            return t, nil
-        }
-    }
-    return task.Task{}, ErrTaskNotFound
-}
-
-// UpdateTask обновляет задачу.
-func (fs *FileStorage) UpdateTask(t task.Task) error {
-    fs.mu.Lock()
-    defer fs.mu.Unlock()
-    for i, task := range fs.tasks {
-        if task.ID == t.ID {
-            fs.tasks[i] = t
-            return fs.saveTasks()
-        }
-    }
-    return ErrTaskNotFound
-}
-
-// DeleteTask удаляет задачу по ID.
-func (fs *FileStorage) DeleteTask(id int) error {
-    fs.mu.Lock()
-    defer fs.mu.Unlock()
-    for i, t := range fs.tasks {
-        if t.ID == id {
-            fs.tasks = append(fs.tasks[:i], fs.tasks[i+1:]...)
-            return fs.saveTasks()
-        }
-    }
-    return ErrTaskNotFound
-}
-
-// GetNextID возвращает следующий ID для задачи.
-func (fs *FileStorage) GetNextID() int {
-    if len(fs.tasks) == 0 {
-        return 1
-    }
-    return fs.tasks[len(fs.tasks)-1].ID + 1
-}
-
