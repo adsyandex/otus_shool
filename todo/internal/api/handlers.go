@@ -2,7 +2,7 @@ package api
 
 import (
 	"net/http"
-	"todo-app/internal/task"
+	"github.com/adsyandex/otus_shool/internal/task"
 
 	"github.com/gin-gonic/gin"
 )
