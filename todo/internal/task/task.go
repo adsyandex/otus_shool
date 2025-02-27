@@ -1,75 +1,36 @@
 package task
 
 import (
-    "errors"
-    "time"
-    "github.com/adsyandex/otus_shool/internal/storage"
+	"sync"
 )
 
-// Task представляет структуру задачи.
+// Task представляет задачу
 type Task struct {
-    ID          int       `json:"id"`
-    Title       string    `json:"title"`
-    Description string    `json:"description"`
-    Status      string    `json:"status"`
-    CreatedAt   time.Time `json:"created_at"`
+	ID   int
+	Name string
 }
 
-// TaskManager управляет задачами.
+// TaskManager управляет списком задач
 type TaskManager struct {
-    storage storage.Storage
+	tasks []Task
+	mu    sync.Mutex
 }
 
-// NewTaskManager создает новый экземпляр TaskManager.
-func NewTaskManager(storage storage.Storage) *TaskManager {
-    return &TaskManager{storage: storage}
+// NewTaskManager создает новый менеджер задач
+func NewTaskManager() *TaskManager {
+	return &TaskManager{}
 }
 
-// AddTask добавляет новую задачу.
-func (tm *TaskManager) AddTask(title, description string) error {
-    if title == "" {
-        return errors.New("заголовок задачи не может быть пустым")
-    }
-    task := Task{
-        ID:          tm.storage.GetNextID(),
-        Title:       title,
-        Description: description,
-        Status:      "в процессе",
-        CreatedAt:   time.Now(),
-    }
-    return tm.storage.SaveTask(task)
+// AddTask добавляет задачу в список
+func (tm *TaskManager) AddTask(task Task) {
+	tm.mu.Lock()
+	defer tm.mu.Unlock()
+	tm.tasks = append(tm.tasks, task)
 }
 
-// GetTasks возвращает список всех задач.
-func (tm *TaskManager) GetTasks() ([]Task, error) {
-    return tm.storage.GetTasks()
+// GetTasks возвращает копию списка задач
+func (tm *TaskManager) GetTasks() []Task {
+	tm.mu.Lock()
+	defer tm.mu.Unlock()
+	return append([]Task{}, tm.tasks...)
 }
-
-// GetTaskByID возвращает задачу по ID.
-func (tm *TaskManager) GetTaskByID(id int) (Task, error) {
-    return tm.storage.GetTaskByID(id)
-}
-
-// UpdateTask обновляет задачу.
-func (tm *TaskManager) UpdateTask(id int, title, description, status string) error {
-    task, err := tm.storage.GetTaskByID(id)
-    if err != nil {
-        return err
-    }
-    if title != "" {
-        task.Title = title
-    }
-    if description != "" {
-        task.Description = description
-    }
-    if status != "" {
-        task.Status = status
-    }
-    return tm.storage.UpdateTask(task)
-}
-
-// DeleteTask удаляет задачу по ID.
-func (tm *TaskManager) DeleteTask(id int) error {
-    return tm.storage.DeleteTask(id)
-}
-
