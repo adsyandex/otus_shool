@@ -19,17 +19,19 @@ todo-app/
 │       └── main.go          # Точка входа
 ├── internal/
 │   ├── task/
-│   │   ├── task.go         # Логика для работы с задачами
-│   │   └── task_test.go    # Тесты для работы с задачами
+│   │   └── task.go         # Логика для работы с задачами
 │   ├── storage/
 │   │   ├── file_storage.go # Логика для работы с файлом хранения
 │   │   └── storage.go      # Интерфейс хранения
-│   └── api/
-│       ├── handlers.go     # Обработчики HTTP-запросов
-│       └── routes.go       # Маршруты для Gin
-├── Dockerfile              # Dockerfile для контейнеризации приложения
-├── docker-compose.yml      # Docker Compose для развертывания
-└── go.mod                  # Модуль Go
+│   ├── api/
+│   │   ├── handlers.go     # Обработчики HTTP-запросов
+│   │   └── routes.go       # Маршруты для Gin
+│   ├── logger/             # Новый пакет для логирования
+│   │   └── logger.go       # Интерфейс и реализация логирования
+├── Dockerfile              
+├── docker-compose.yml      
+└── go.mod                  
+
 ```
 
 ## 27.12.24 Обучение в Otus. Начинаю новый проект
