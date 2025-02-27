@@ -3,7 +3,7 @@ package storage
 import (
 	"encoding/json"
 	"os"
-	"todo-app/internal/task"
+	"github.com/adsyandex/otus_shool/internal/task"
 )
 
 // FileStorage реализует Storage с использованием файла
