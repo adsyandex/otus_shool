@@ -3,7 +3,7 @@ package logger
 import (
 	"log"
 	"time"
-	"todo-app/internal/task"
+	"github.com/adsyandex/otus_shool/internal/task"
 )
 
 // Logger определяет интерфейс логирования
