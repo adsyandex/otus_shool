@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-    "github.com/adsyandex/otus_shool/todo/internal/api"
-    "github.com/adsyandex/otus_shool/todo/internal/logger"
-    "github.com/adsyandex/otus_shool/todo/internal/storage"
-    "github.com/adsyandex/otus_shool/todo/internal/task"
+    	"github.com/adsyandex/otus_shool/todo/internal/api"
+    	"github.com/adsyandex/otus_shool/todo/internal/logger"
+    	"github.com/adsyandex/otus_shool/todo/internal/storage"
+    	"github.com/adsyandex/otus_shool/todo/internal/task"
 	"github.com/adsyandex/otus_shool/todo/internal/models"
 )
 
