@@ -1,36 +1,41 @@
 package logger
 
 import (
-	"log"
-	"time"
-	"github.com/adsyandex/otus_shool/internal/task"
+    "log"
+    "time"
+    "github.com/adsyandex/otus_shool/todo/internal/models"
+	"github.com/adsyandex/otus_shool/todo/internal/task" // Импортируем models
 )
 
 // Logger определяет интерфейс логирования
 type Logger interface {
-	LogTasks(tasks []task.Task)
+    LogTasks(tasks []models.Task) // Используем models.Task
 }
 
 // ConsoleLogger выводит лог в консоль
 type ConsoleLogger struct{}
 
 // LogTasks логирует новые задачи в консоль
-func (cl *ConsoleLogger) LogTasks(tasks []task.Task) {
-	log.Printf("Добавленные задачи: %+v\n", tasks)
+func (cl *ConsoleLogger) LogTasks(tasks []models.Task) { // Используем models.Task
+    log.Printf("Добавленные задачи: %+v\n", tasks)
 }
 
 // StartLogging запускает процесс логирования
 func StartLogging(taskManager *task.TaskManager, logger Logger) {
-	var lastCount int
-	ticker := time.NewTicker(200 * time.Millisecond)
-	defer ticker.Stop()
+    var lastCount int
+    ticker := time.NewTicker(200 * time.Millisecond)
+    defer ticker.Stop()
 
-	for range ticker.C {
-		tasks := taskManager.GetTasks()
-		if len(tasks) > lastCount {
-			logger.LogTasks(tasks[lastCount:])
-			lastCount = len(tasks)
-		}
-	}
+    for range ticker.C {
+        tasks, err := taskManager.GetTasks()
+        if err != nil {
+            log.Printf("Ошибка при получении задач: %v", err)
+            continue
+        }
+
+        if tasks != nil && len(tasks) > lastCount {
+            logger.LogTasks(tasks[lastCount:])
+            lastCount = len(tasks)
+        }
+    }
 }
-

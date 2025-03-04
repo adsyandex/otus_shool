@@ -7,10 +7,11 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/adsyandex/otus_shool/internal/api"
-	"github.com/adsyandex/otus_shool/internal/logger"
-	"github.com/adsyandex/otus_shool/internal/storage"
-	"github.com/adsyandex/otus_shool/internal/task"
+    "github.com/adsyandex/otus_shool/todo/internal/api"
+    "github.com/adsyandex/otus_shool/todo/internal/logger"
+    "github.com/adsyandex/otus_shool/todo/internal/storage"
+    "github.com/adsyandex/otus_shool/todo/internal/task"
+	"github.com/adsyandex/otus_shool/todo/internal/models"
 )
 
 // Глобальные переменные для синхронизации
@@ -24,7 +25,7 @@ func main() {
 	taskManager := task.NewTaskManager(store)
 
 	// Канал для передачи задач между горутинами
-	taskChannel := make(chan task.Task, 10)
+	taskChannel := make(chan models.Task, 10)
 	var wg sync.WaitGroup
 
 	// Горутина для обработки задач
@@ -32,7 +33,7 @@ func main() {
 	go func() {
 		defer wg.Done()
 		for t := range taskChannel {
-			log.Println("Обрабатываем задачу:", t.Title)
+			log.Println("Обрабатываем задачу:", t.Name)
 			time.Sleep(500 * time.Millisecond) // Имитация работы
 		}
 	}()
@@ -49,7 +50,7 @@ func main() {
 
 	// Используем sync.Once для загрузки задач из хранилища один раз
 	once.Do(func() {
-		tasks, err := store.GetTasks()
+		tasks, err := taskManager.GetTasks()
 		if err != nil {
 			log.Fatalf("Ошибка загрузки задач: %v", err)
 		}
@@ -60,7 +61,7 @@ func main() {
 
 	// Запуск API-сервера
 	r := gin.Default()
-	api.SetupRoutes(r, taskManager)
+	api.SetupRouter(r, taskManager)
 	fmt.Println("Сервер запущен на http://localhost:8080")
 	r.Run(":8080")
 

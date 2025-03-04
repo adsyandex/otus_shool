@@ -2,8 +2,8 @@ package api
 
 import (
 	"net/http"
-	"github.com/adsyandex/otus_shool/internal/task"
-
+	"github.com/adsyandex/otus_shool/todo/internal/task"
+	"github.com/adsyandex/otus_shool/todo/internal/models" // Импортируем models
 	"github.com/gin-gonic/gin"
 )
 
@@ -19,7 +19,7 @@ func NewTaskHandler(tm *task.TaskManager) *TaskHandler {
 
 // AddTask добавляет новую задачу
 func (h *TaskHandler) AddTask(c *gin.Context) {
-	var newTask task.Task
+	var newTask models.Task // Используем models.Task вместо task.Task
 	if err := c.ShouldBindJSON(&newTask); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
 		return
@@ -30,6 +30,10 @@ func (h *TaskHandler) AddTask(c *gin.Context) {
 
 // GetTasks возвращает список задач
 func (h *TaskHandler) GetTasks(c *gin.Context) {
-	tasks := h.TaskManager.GetTasks()
+	tasks, err := h.TaskManager.GetTasks()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 	c.JSON(http.StatusOK, tasks)
 }

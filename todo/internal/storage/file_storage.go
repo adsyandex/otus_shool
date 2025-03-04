@@ -1,61 +1,38 @@
 package storage
 
 import (
-	"encoding/json"
-	"os"
-	"sync"
-
-	"github.com/adsyandex/otus_shool/internal/task"
+    "encoding/json"
+    "os"
+    "github.com/adsyandex/otus_shool/todo/internal/models" // Импортируем models
 )
 
-// FileStorage реализует Storage с использованием файла
 type FileStorage struct {
-	filename string
-	mu       sync.Mutex // Добавляем мьютекс для защиты доступа к файлу
+    filePath string
 }
 
-// NewFileStorage создает новый экземпляр FileStorage
-func NewFileStorage(filename string) *FileStorage {
-	return &FileStorage{filename: filename}
+func NewFileStorage(filePath string) *FileStorage {
+    return &FileStorage{filePath: filePath}
 }
 
-// Save сохраняет задачу в файл (безопасно для нескольких горутин)
-func (fs *FileStorage) Save(task task.Task) error {
-	fs.mu.Lock()
-	defer fs.mu.Unlock()
+func (fs *FileStorage) GetTasks() ([]models.Task, error) { // Используем models.Task
+    file, err := os.ReadFile(fs.filePath)
+    if err != nil {
+        return nil, err
+    }
 
-	tasks, err := fs.Load()
-	if err != nil {
-		return err
-	}
+    var tasks []models.Task
+    if err := json.Unmarshal(file, &tasks); err != nil {
+        return nil, err
+    }
 
-	tasks = append(tasks, task)
-
-	data, err := json.Marshal(tasks)
-	if err != nil {
-		return err
-	}
-
-	return os.WriteFile(fs.filename, data, 0644)
+    return tasks, nil
 }
 
-// Load загружает задачи из файла (безопасно для нескольких горутин)
-func (fs *FileStorage) Load() ([]task.Task, error) {
-	fs.mu.Lock()
-	defer fs.mu.Unlock()
+func (fs *FileStorage) SaveTasks(tasks []models.Task) error { // Используем models.Task
+    file, err := json.Marshal(tasks)
+    if err != nil {
+        return err
+    }
 
-	data, err := os.ReadFile(fs.filename)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return []task.Task{}, nil
-		}
-		return nil, err
-	}
-
-	var tasks []task.Task
-	if err := json.Unmarshal(data, &tasks); err != nil {
-		return nil, err
-	}
-
-	return tasks, nil
+    return os.WriteFile(fs.filePath, file, 0644)
 }
