@@ -3,8 +3,8 @@ package logger
 import (
     "log"
     "time"
-    "github.com/adsyandex/otus_shool/todo/internal/models"
-	"github.com/adsyandex/otus_shool/todo/internal/task" // Импортируем models
+    "github.com/adsyandex/otus_shool/todo/internal/models" // Импортируем models
+    "github.com/adsyandex/otus_shool/todo/internal/task" 
 )
 
 // Logger определяет интерфейс логирования
