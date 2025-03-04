@@ -52,7 +52,17 @@ func main() {
 	once.Do(func() {
 		tasks, err := taskManager.GetTasks()
 		if err != nil {
-			log.Fatalf("Ошибка загрузки задач: %v", err)
+			log.Printf("Ошибка загрузки задач: %v", err)
+			// Добавляем начальные задачи, если список пуст
+			initialTasks := []models.Task{
+				{ID: 1, Name: "Первая задача"},
+				{ID: 2, Name: "Вторая задача"},
+			}
+			for _, t := range initialTasks {
+				taskManager.AddTask(t)
+				taskChannel <- t
+			}
+			return
 		}
 		for _, t := range tasks {
 			taskChannel <- t
