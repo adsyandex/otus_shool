@@ -7,15 +7,14 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-    	"github.com/adsyandex/otus_shool/todo/internal/api"
-    	"github.com/adsyandex/otus_shool/todo/internal/logger"
-    	"github.com/adsyandex/otus_shool/todo/internal/storage"
-    	"github.com/adsyandex/otus_shool/todo/internal/task"
+
+    "github.com/adsyandex/otus_shool/todo/internal/api"
+    "github.com/adsyandex/otus_shool/todo/internal/logger"
+    "github.com/adsyandex/otus_shool/todo/internal/storage"
+    "github.com/adsyandex/otus_shool/todo/internal/task"
 	"github.com/adsyandex/otus_shool/todo/internal/models"
 )
 
-// Глобальные переменные для синхронизации
-var once sync.Once
 
 func main() {
 	// Инициализация хранилища
@@ -48,26 +47,16 @@ func main() {
 		logger.StartLogging(taskManager, consoleLogger)
 	}()
 
-	// Используем sync.Once для загрузки задач из хранилища один раз
-	once.Do(func() {
-		tasks, err := taskManager.GetTasks()
-		if err != nil {
-			log.Printf("Ошибка загрузки задач: %v", err)
-			// Добавляем начальные задачи, если список пуст
-			initialTasks := []models.Task{
-				{ID: 1, Name: "Первая задача"},
-				{ID: 2, Name: "Вторая задача"},
-			}
-			for _, t := range initialTasks {
-				taskManager.AddTask(t)
-				taskChannel <- t
-			}
-			return
-		}
-		for _, t := range tasks {
+	// Загрузка задач из хранилища
+	tasks, err := taskManager.GetTasks()
+	if err != nil {
+			log.Fatalf("Ошибка загрузки задач: %v", err)
+	}
+	for _, t := range tasks {
 			taskChannel <- t
-		}
-	})
+	}
+		
+		
 
 	// Запуск API-сервера
 	r := gin.Default()
