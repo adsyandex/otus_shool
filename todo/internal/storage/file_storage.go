@@ -3,11 +3,13 @@ package storage
 import (
     "encoding/json"
     "os"
+    "sync"
     "github.com/adsyandex/otus_shool/todo/internal/models" // Импортируем models
 )
 
 type FileStorage struct {
     filePath string
+    mu       sync.Mutex // Добавляем мьютекс
 }
 
 func NewFileStorage(filePath string) *FileStorage {
@@ -15,6 +17,9 @@ func NewFileStorage(filePath string) *FileStorage {
 }
 
 func (fs *FileStorage) GetTasks() ([]models.Task, error) { // Используем models.Task
+    fs.mu.Lock()         // Блокируем мьютекс
+    defer fs.mu.Unlock() // Разблокируем мьютекс при выходе из функции
+    
     file, err := os.ReadFile(fs.filePath)
     if err != nil {
         return nil, err
@@ -29,6 +34,9 @@ func (fs *FileStorage) GetTasks() ([]models.Task, error) { // Используе
 }
 
 func (fs *FileStorage) SaveTasks(tasks []models.Task) error { // Используем models.Task
+    fs.mu.Lock()         // Блокируем мьютекс
+    defer fs.mu.Unlock() // Разблокируем мьютекс при выходе из функци
+    
     file, err := json.Marshal(tasks)
     if err != nil {
         return err
