@@ -1,70 +1,107 @@
 package main
 
 import (
-	"fmt"
-	"log"
-	"sync"
-	"time"
+    "context"
+    "fmt"
+    "log"
+    "net/http"
+    "os"
+    "os/signal"
+    "sync"
+    "syscall"
+    "time"
 
-	"github.com/gin-gonic/gin"
-
+    "github.com/gin-gonic/gin"
     "github.com/adsyandex/otus_shool/todo/internal/api"
     "github.com/adsyandex/otus_shool/todo/internal/logger"
     "github.com/adsyandex/otus_shool/todo/internal/storage"
     "github.com/adsyandex/otus_shool/todo/internal/task"
-	"github.com/adsyandex/otus_shool/todo/internal/models"
+    "github.com/adsyandex/otus_shool/todo/internal/models"
 )
 
-
 func main() {
-	// Инициализация хранилища
-	store := storage.NewFileStorage("tasks.json")
+    // Создаём контекст с отменой
+    ctx, cancel := context.WithCancel(context.Background())
+    defer cancel()
 
-	// Инициализация менеджера задач
-	taskManager := task.NewTaskManager(store)
+    // Инициализация хранилища
+    store := storage.NewFileStorage("tasks.json")
 
-	// Канал для передачи задач между горутинами
-	taskChannel := make(chan models.Task, 10)
-	var wg sync.WaitGroup
+    // Инициализация менеджера задач
+    taskManager := task.NewTaskManager(store)
 
-	// Горутина для обработки задач
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		for t := range taskChannel {
-			log.Println("Обрабатываем задачу:", t.Name)
-			time.Sleep(500 * time.Millisecond) // Имитация работы
-		}
-	}()
+    // Канал для передачи задач между горутинами
+    taskChannel := make(chan models.Task, 10)
+    var wg sync.WaitGroup
 
-	// Инициализация логирования
-	consoleLogger := &logger.ConsoleLogger{}
+    // Горутина для обработки задач
+    wg.Add(1)
+    go func() {
+        defer wg.Done()
+        for t := range taskChannel {
+            log.Println("Обрабатываем задачу:", t.Name)
+            time.Sleep(500 * time.Millisecond) // Имитация работы
+        }
+    }()
 
-	// Запуск логирования в отдельной горутине
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		logger.StartLogging(taskManager, consoleLogger)
-	}()
+    // Инициализация логирования
+    consoleLogger := &logger.ConsoleLogger{}
 
-	// Загрузка задач из хранилища
-	tasks, err := taskManager.GetTasks()
-	if err != nil {
-			log.Fatalf("Ошибка загрузки задач: %v", err)
-	}
-	for _, t := range tasks {
-			taskChannel <- t
-	}
-		
-		
+    // Запуск логирования в отдельной горутине
+    wg.Add(1)
+    go func() {
+        defer wg.Done()
+        logger.StartLogging(ctx, taskManager, consoleLogger)
+    }()
 
-	// Запуск API-сервера
-	r := gin.Default()
-	api.SetupRouter(r, taskManager)
-	fmt.Println("Сервер запущен на http://localhost:8080")
-	r.Run(":8080")
+    // Загрузка задач из хранилища
+    tasks, err := taskManager.GetTasks(ctx)
+    if err != nil {
+        log.Fatalf("Ошибка загрузки задач: %v", err)
+    }
+    for _, t := range tasks {
+        taskChannel <- t
+    }
 
-	// Закрываем канал задач и ждем завершения горутин
-	close(taskChannel)
-	wg.Wait()
+    // Запуск API-сервера
+    r := gin.Default()
+    api.SetupRouter(r, taskManager)
+
+    // HTTP-сервер
+    srv := &http.Server{
+        Addr:    ":8080",
+        Handler: r,
+    }
+
+    // Запуск сервера в отдельной горутине
+    go func() {
+        if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+            log.Fatalf("Ошибка запуска сервера: %v", err)
+        }
+    }()
+
+    fmt.Println("Сервер запущен на http://localhost:8080")
+
+    // Ожидание сигналов от ОС
+    quit := make(chan os.Signal, 1)
+    signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+    <-quit
+    log.Println("Получен сигнал завершения")
+
+    // Отмена контекста для завершения горутин
+    cancel()
+
+    // Graceful shutdown сервера
+    ctxShutdown, cancelShutdown := context.WithTimeout(context.Background(), 5*time.Second)
+    defer cancelShutdown()
+    if err := srv.Shutdown(ctxShutdown); err != nil {
+        log.Fatalf("Ошибка завершения сервера: %v", err)
+    }
+
+    // Закрываем канал задач
+    close(taskChannel)
+
+    // Ожидание завершения всех горутин
+    wg.Wait()
+    log.Println("Приложение завершено")
 }

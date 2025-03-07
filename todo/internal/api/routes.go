@@ -1,19 +1,12 @@
 package api
 
 import (
-	"github.com/adsyandex/otus_shool/todo/internal/task"
-
-	"github.com/gin-gonic/gin"
+    "github.com/gin-gonic/gin"
+    "github.com/adsyandex/otus_shool/todo/internal/task"
 )
 
-// SetupRouter настраивает маршруты для API
 func SetupRouter(r *gin.Engine, tm *task.TaskManager) {
-    r.GET("/tasks", func(c *gin.Context) {
-        tasks, err := tm.GetTasks()
-        if err != nil {
-            c.JSON(500, gin.H{"error": err.Error()})
-            return
-        }
-        c.JSON(200, tasks)
-    })
+    handler := &TaskHandler{TaskManager: tm}
+    r.GET("/tasks", handler.GetTasks)
+    r.POST("/tasks", handler.AddTask)
 }
