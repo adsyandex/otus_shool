@@ -1,38 +1,42 @@
+// internal/api/handlers.go
 package api
 
 import (
+    "encoding/json"
     "net/http"
-    "github.com/gin-gonic/gin"
     "github.com/adsyandex/otus_shool/todo/internal/models"
     "github.com/adsyandex/otus_shool/todo/internal/task"
 )
 
 type TaskHandler struct {
-    TaskManager *task.TaskManager
+    service *task.Service // Исправлено с TaskManager на Service
 }
 
-// NewTaskHandler создает новый обработчик задач
-func NewTaskHandler(tm *task.TaskManager) *TaskHandler {
-    return &TaskHandler{TaskManager: tm}
-}
-
-// AddTask добавляет новую задачу
-func (h *TaskHandler) AddTask(c *gin.Context) {
-    var newTask models.Task
-    if err := c.ShouldBindJSON(&newTask); err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+func (h *TaskHandler) AddTask(w http.ResponseWriter, r *http.Request) {
+    var req models.TaskRequest
+    if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+        http.Error(w, "Invalid request", http.StatusBadRequest)
         return
     }
-    h.TaskManager.AddTask(newTask)
-    c.JSON(http.StatusOK, gin.H{"message": "Task added", "task": newTask})
-}
-
-// GetTasks возвращает список задач
-func (h *TaskHandler) GetTasks(c *gin.Context) {
-    tasks, err := h.TaskManager.GetTasks(c.Request.Context())
+    
+    resp, err := h.service.AddTask(r.Context(), req)
     if err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        http.Error(w, err.Error(), http.StatusInternalServerError)
         return
     }
-    c.JSON(http.StatusOK, tasks)
+    
+    json.NewEncoder(w).Encode(resp)
+}
+
+// internal/api/routes.go
+package api
+
+import (
+    "github.com/gorilla/mux"
+    "github.com/adsyandex/otus_shool/todo/internal/task"
+)
+
+func RegisterRoutes(r *mux.Router, s *task.Service) {
+    handler := &TaskHandler{service: s}
+    r.HandleFunc("/tasks", handler.AddTask).Methods("POST")
 }

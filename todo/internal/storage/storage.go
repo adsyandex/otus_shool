@@ -1,3 +1,4 @@
+// storage.go
 package storage
 
 import (
@@ -5,8 +6,29 @@ import (
     "github.com/adsyandex/otus_shool/todo/internal/models"
 )
 
-// Storage определяет интерфейс для работы с хранилищем задач
 type Storage interface {
-    GetTasks(ctx context.Context) ([]models.Task, error)
-    SaveTasks(ctx context.Context, tasks []models.Task) error
+    AddTask(ctx context.Context, task models.Task) error
+    GetTasks(ctx context.Context, limit, offset int) ([]models.Task, error)
+}
+
+// file_storage.go
+package storage
+
+import (
+    "context"
+    "github.com/adsyandex/otus_shool/todo/internal/models"
+)
+
+type FileStorage struct {
+    // Реализация хранилища
+}
+
+func (s *FileStorage) AddTask(ctx context.Context, task models.Task) error {
+    // Логика сохранения
+    return nil
+}
+
+func (s *FileStorage) GetTasks(ctx context.Context, limit, offset int) ([]models.Task, error) {
+    // Логика получения
+    return []models.Task{}, nil
 }
