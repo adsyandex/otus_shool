@@ -1,33 +1,18 @@
 package main
 
 import (
-    "fmt"
-    "os"
-    "github.com/gin-gonic/gin"
-    "github.com/adsyandex/otus_shool/internal/api" // Исправленный импорт
-    "github.com/adsyandex/otus_shool/internal/menu"
-    "github.com/adsyandex/otus_shool/internal/storage"
-    "github.com/adsyandex/otus_shool/internal/task"
+	"log"
+	"net/http" // Добавлен импорт
+	"github.com/adsyandex/otus_shool/todo/internal/api"
+	"github.com/adsyandex/otus_shool/todo/internal/storage"
+	"github.com/adsyandex/otus_shool/todo/internal/task"
 )
 
 func main() {
-    // Инициализация хранилища
-    store := storage.NewFileStorage("tasks.json")
+	storage := storage.NewMemoryStorage("data/tasks.json")
+	service := task.NewService(storage)
+	router := api.RegisterRoutes(service)
 
-    // Инициализация менеджера задач
-    taskManager := task.NewTaskManager(store)
-
-    // Выбор режима работы
-    if len(os.Args) > 1 && os.Args[1] == "--api" {
-        // Сетевой режим
-        r := gin.Default()
-        api.SetupRoutes(r, taskManager)
-        fmt.Println("Сервер запущен на http://localhost:8080")
-        r.Run(":8080")
-    } else {
-        // Консольный режим
-        appMenu := menu.NewMenu(taskManager)
-        fmt.Println("Добро пожаловать в TODO-лист!")
-        appMenu.Run()
-    }
+	log.Println("Starting server on :8080")
+	log.Fatal(http.ListenAndServe(":8080", router))
 }

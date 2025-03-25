@@ -1,16 +1,17 @@
+// internal/api/routes.go
 package api
 
 import (
-	"github.com/adsyandex/otus_shool/internal/task"
-	"github.com/gin-gonic/gin"
+    "net/http"
+    "github.com/adsyandex/otus_shool/todo/internal/task"
 )
 
-func SetupRoutes(r *gin.Engine, taskManager *task.TaskManager) {
-	taskHandler := NewTaskHandler(taskManager)
+func RegisterRoutes(service *task.Service) http.Handler {
+    mux := http.NewServeMux()
+    handler := &TaskHandler{service: service}
 
-	r.GET("/tasks", taskHandler.GetTasks)
-	r.GET("/tasks/:id", taskHandler.GetTaskByID)
-	r.POST("/tasks", taskHandler.CreateTask)
-	r.PUT("/tasks/:id", taskHandler.UpdateTask)
-	r.DELETE("/tasks/:id", taskHandler.DeleteTask)
+    mux.HandleFunc("GET /tasks", handler.GetTasks)
+    mux.HandleFunc("POST /tasks", handler.AddTask)
+
+    return mux
 }

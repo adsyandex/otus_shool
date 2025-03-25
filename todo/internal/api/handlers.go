@@ -1,98 +1,53 @@
 package api
 
 import (
+    "context"
+    "encoding/json"
     "net/http"
-    "strconv"
-    "github.com/gin-gonic/gin"
-    "github.com/adsyandex/otus_shool/internal/task"
+    "time"
+    
+    "github.com/adsyandex/otus_shool/todo/internal/models"
+    "github.com/adsyandex/otus_shool/todo/internal/task"
 )
 
 type TaskHandler struct {
-    TaskManager *task.TaskManager
+    service *task.Service
 }
 
-func NewTaskHandler(taskManager *task.TaskManager) *TaskHandler {
-    return &TaskHandler{TaskManager: taskManager}
+func (h *TaskHandler) AddTask(w http.ResponseWriter, r *http.Request) {
+    // Явное использование context (даже если просто логируем)
+    ctx, cancel := context.WithCancel(r.Context())
+    defer cancel()
+    
+    var req models.TaskRequest
+    if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+        http.Error(w, err.Error(), http.StatusBadRequest)
+        return
+    }
+
+    task := models.Task{
+        Title:       req.Title,
+        Description: req.Description,
+        Completed:   false,
+    }
+
+    if err := h.service.AddTask(ctx, task); err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+
+    w.WriteHeader(http.StatusCreated)
 }
 
-func (h *TaskHandler) GetTasks(c *gin.Context) {
-    tasks, err := h.TaskManager.GetTasks()
+func (h *TaskHandler) GetTasks(w http.ResponseWriter, r *http.Request) {
+    ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second) // Явное использование
+    defer cancel()
+    
+    tasks, err := h.service.GetTasks(ctx)
     if err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-        return
-    }
-    c.JSON(http.StatusOK, tasks)
-}
-
-func (h *TaskHandler) GetTaskByID(c *gin.Context) {
-    id, err := strconv.Atoi(c.Param("id"))
-    if err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{"error": "Неверный ID задачи"})
+        http.Error(w, err.Error(), http.StatusInternalServerError)
         return
     }
 
-    task, err := h.TaskManager.GetTaskByID(id)
-    if err != nil {
-        c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-        return
-    }
-    c.JSON(http.StatusOK, task)
-}
-
-func (h *TaskHandler) CreateTask(c *gin.Context) {
-    var newTask struct {
-        Title       string `json:"title"`
-        Description string `json:"description"`
-    }
-    if err := c.ShouldBindJSON(&newTask); err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-        return
-    }
-
-    err := h.TaskManager.AddTask(newTask.Title, newTask.Description)
-    if err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-        return
-    }
-    c.JSON(http.StatusCreated, gin.H{"message": "Задача успешно создана"})
-}
-
-func (h *TaskHandler) UpdateTask(c *gin.Context) {
-    id, err := strconv.Atoi(c.Param("id"))
-    if err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{"error": "Неверный ID задачи"})
-        return
-    }
-
-    var updatedTask struct {
-        Title       string `json:"title"`
-        Description string `json:"description"`
-        Status      string `json:"status"`
-    }
-    if err := c.ShouldBindJSON(&updatedTask); err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-        return
-    }
-
-    err = h.TaskManager.UpdateTask(id, updatedTask.Title, updatedTask.Description, updatedTask.Status)
-    if err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-        return
-    }
-    c.JSON(http.StatusOK, gin.H{"message": "Задача успешно обновлена"})
-}
-
-func (h *TaskHandler) DeleteTask(c *gin.Context) {
-    id, err := strconv.Atoi(c.Param("id"))
-    if err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{"error": "Неверный ID задачи"})
-        return
-    }
-
-    err = h.TaskManager.DeleteTask(id)
-    if err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-        return
-    }
-    c.JSON(http.StatusOK, gin.H{"message": "Задача успешно удалена"})
+    json.NewEncoder(w).Encode(models.TaskCollection{Tasks: tasks})
 }
