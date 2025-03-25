@@ -1,14 +1,18 @@
 // internal/models/task.go
-package models // Исправлено с storage на models
-
-type Task struct {
-    ID   string `json:"id"`
-    Name string `json:"name"`
-}
-
-// internal/models/requests.go
 package models
 
+type Task struct {
+    ID          string `json:"id"`
+    Title       string `json:"title"`
+    Description string `json:"description"`
+    Completed   bool   `json:"completed"`
+}
+
 type TaskRequest struct {
-    Name string `json:"name"`
+    Title       string `json:"title"`
+    Description string `json:"description"`
+}
+
+type TaskCollection struct {
+    Tasks []Task `json:"tasks"`
 }
