@@ -1,10 +1,11 @@
-// internal/api/handlers.go
 package api
 
 import (
     "context"
     "encoding/json"
     "net/http"
+    "time"
+    
     "github.com/adsyandex/otus_shool/todo/internal/models"
     "github.com/adsyandex/otus_shool/todo/internal/task"
 )
@@ -14,6 +15,10 @@ type TaskHandler struct {
 }
 
 func (h *TaskHandler) AddTask(w http.ResponseWriter, r *http.Request) {
+    // Явное использование context (даже если просто логируем)
+    ctx, cancel := context.WithCancel(r.Context())
+    defer cancel()
+    
     var req models.TaskRequest
     if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
         http.Error(w, err.Error(), http.StatusBadRequest)
@@ -26,7 +31,7 @@ func (h *TaskHandler) AddTask(w http.ResponseWriter, r *http.Request) {
         Completed:   false,
     }
 
-    if err := h.service.AddTask(r.Context(), task); err != nil {
+    if err := h.service.AddTask(ctx, task); err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
         return
     }
@@ -35,7 +40,10 @@ func (h *TaskHandler) AddTask(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *TaskHandler) GetTasks(w http.ResponseWriter, r *http.Request) {
-    tasks, err := h.service.GetTasks(r.Context())
+    ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second) // Явное использование
+    defer cancel()
+    
+    tasks, err := h.service.GetTasks(ctx)
     if err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
         return
