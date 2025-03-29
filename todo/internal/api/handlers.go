@@ -1,98 +1,96 @@
 package api
 
 import (
-    "net/http"
-    "strconv"
-    "github.com/gin-gonic/gin"
-    "github.com/adsyandex/otus_shool/internal/task"
+	"net/http"
+	"strconv"
+	"github.com/gin-gonic/gin"
+	"github.com/adsyandex/otus_shool/todo/internal/models"
+	"github.com/adsyandex/otus_shool/todo/internal/storage"
 )
 
 type TaskHandler struct {
-    TaskManager *task.TaskManager
+	storage storage.Storage
 }
 
-func NewTaskHandler(taskManager *task.TaskManager) *TaskHandler {
-    return &TaskHandler{TaskManager: taskManager}
-}
-
-func (h *TaskHandler) GetTasks(c *gin.Context) {
-    tasks, err := h.TaskManager.GetTasks()
-    if err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-        return
-    }
-    c.JSON(http.StatusOK, tasks)
-}
-
-func (h *TaskHandler) GetTaskByID(c *gin.Context) {
-    id, err := strconv.Atoi(c.Param("id"))
-    if err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{"error": "Неверный ID задачи"})
-        return
-    }
-
-    task, err := h.TaskManager.GetTaskByID(id)
-    if err != nil {
-        c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-        return
-    }
-    c.JSON(http.StatusOK, task)
+func NewTaskHandler(storage storage.Storage) *TaskHandler {
+	return &TaskHandler{storage: storage}
 }
 
 func (h *TaskHandler) CreateTask(c *gin.Context) {
-    var newTask struct {
-        Title       string `json:"title"`
-        Description string `json:"description"`
-    }
-    if err := c.ShouldBindJSON(&newTask); err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-        return
-    }
+	var task models.Task
+	if err := c.ShouldBindJSON(&task); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
-    err := h.TaskManager.AddTask(newTask.Title, newTask.Description)
-    if err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-        return
-    }
-    c.JSON(http.StatusCreated, gin.H{"message": "Задача успешно создана"})
+	if task.Title == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "title is required"})
+		return
+	}
+
+	if err := h.storage.SaveTask(c.Request.Context(), task); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, task)
+}
+
+func (h *TaskHandler) GetTask(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		return
+	}
+
+	task, err := h.storage.GetTaskByID(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, task)
 }
 
 func (h *TaskHandler) UpdateTask(c *gin.Context) {
-    id, err := strconv.Atoi(c.Param("id"))
-    if err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{"error": "Неверный ID задачи"})
-        return
-    }
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		return
+	}
 
-    var updatedTask struct {
-        Title       string `json:"title"`
-        Description string `json:"description"`
-        Status      string `json:"status"`
-    }
-    if err := c.ShouldBindJSON(&updatedTask); err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-        return
-    }
+	var task models.Task
+	if err := c.ShouldBindJSON(&task); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	task.ID = id
 
-    err = h.TaskManager.UpdateTask(id, updatedTask.Title, updatedTask.Description, updatedTask.Status)
-    if err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-        return
-    }
-    c.JSON(http.StatusOK, gin.H{"message": "Задача успешно обновлена"})
+	if err := h.storage.UpdateTask(c.Request.Context(), task); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, task)
 }
 
 func (h *TaskHandler) DeleteTask(c *gin.Context) {
-    id, err := strconv.Atoi(c.Param("id"))
-    if err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{"error": "Неверный ID задачи"})
-        return
-    }
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		return
+	}
 
-    err = h.TaskManager.DeleteTask(id)
-    if err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-        return
-    }
-    c.JSON(http.StatusOK, gin.H{"message": "Задача успешно удалена"})
+	if err := h.storage.DeleteTask(c.Request.Context(), id); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.Status(http.StatusNoContent)
+}
+
+func (h *TaskHandler) GetAllTasks(c *gin.Context) {
+	tasks, err := h.storage.GetTasks(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, tasks)
 }

@@ -1,16 +1,19 @@
 package api
 
 import (
-	"github.com/adsyandex/otus_shool/internal/task"
 	"github.com/gin-gonic/gin"
+	"github.com/adsyandex/otus_shool/todo/internal/storage"
 )
 
-func SetupRoutes(r *gin.Engine, taskManager *task.TaskManager) {
-	taskHandler := NewTaskHandler(taskManager)
+func SetupRoutes(router *gin.Engine, storage storage.Storage) {
+	handler := NewTaskHandler(storage)
 
-	r.GET("/tasks", taskHandler.GetTasks)
-	r.GET("/tasks/:id", taskHandler.GetTaskByID)
-	r.POST("/tasks", taskHandler.CreateTask)
-	r.PUT("/tasks/:id", taskHandler.UpdateTask)
-	r.DELETE("/tasks/:id", taskHandler.DeleteTask)
+	api := router.Group("/api")
+	{
+		api.GET("/items", handler.GetAllTasks)      // Изменил GetTasks на GetAllTasks
+		api.POST("/item", handler.CreateTask)
+		api.GET("/item/:id", handler.GetTask)      // Исправлено название метода
+		api.PUT("/item/:id", handler.UpdateTask)   // Исправлено название метода
+		api.DELETE("/item/:id", handler.DeleteTask) // Исправлено название метода
+	}
 }
