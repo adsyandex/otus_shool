@@ -1,12 +1,17 @@
 package storage
 
 import (
-    "context"
-    "github.com/adsyandex/otus_shool/todo/internal/models"
+	"context"
+	"errors"
+	"github.com/adsyandex/otus_shool/todo/internal/models"
 )
 
-// Storage определяет интерфейс для работы с хранилищем задач
+var ErrNotFound = errors.New("task not found") // Одно определение на весь пакет
+
 type Storage interface {
-    GetTasks(ctx context.Context) ([]models.Task, error)
-    SaveTasks(ctx context.Context, tasks []models.Task) error
+	GetTasks(ctx context.Context) ([]models.Task, error)
+	GetTaskByID(ctx context.Context, id int) (models.Task, error)
+	SaveTask(ctx context.Context, task models.Task) error
+	UpdateTask(ctx context.Context, task models.Task) error
+	DeleteTask(ctx context.Context, id int) error
 }
