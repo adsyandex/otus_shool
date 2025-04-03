@@ -8,12 +8,10 @@ import (
 func SetupRoutes(router *gin.Engine, storage storage.Storage) {
 	handler := NewTaskHandler(storage)
 
-	api := router.Group("/api")
-	{
-		api.GET("/items", handler.GetAllTasks)      // Изменил GetTasks на GetAllTasks
-		api.POST("/item", handler.CreateTask)
-		api.GET("/item/:id", handler.GetTask)      // Исправлено название метода
-		api.PUT("/item/:id", handler.UpdateTask)   // Исправлено название метода
-		api.DELETE("/item/:id", handler.DeleteTask) // Исправлено название метода
-	}
+	// Убрана группа /api, теперь маршруты будут доступны от корня
+	router.GET("/items", handler.GetAllTasks)
+	router.POST("/item", handler.CreateTask)
+	router.GET("/item/:id", handler.GetTask)
+	router.PUT("/item/:id", handler.UpdateTask)
+	router.DELETE("/item/:id", handler.DeleteTask)
 }

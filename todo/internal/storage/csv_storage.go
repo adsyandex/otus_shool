@@ -13,7 +13,7 @@ type CSVStorage struct {
 	filePath string
 }
 
-func NewCSVStorage(filePath string) *CSVStorage {
+func NewCSVStorage(filePath string) Storage {
 	return &CSVStorage{filePath: filePath}
 }
 
