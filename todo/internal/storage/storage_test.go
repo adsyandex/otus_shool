@@ -2,8 +2,9 @@ package storage
 
 import (
 	"context"
-	"testing"
 	"os"
+	"path/filepath"
+	"testing"
 
 	"github.com/adsyandex/otus_shool/todo/internal/models"
 )
@@ -11,14 +12,18 @@ import (
 func TestCSVStorage(t *testing.T) {
 	ctx := context.Background()
 	
-	// Используем временный файл
-	testFile := "testdata/temp_tasks.csv"
-	
+	// Создаем testdata если не существует
+	testDir := filepath.Join("testdata")
+	if _, err := os.Stat(testDir); os.IsNotExist(err) {
+		if err := os.Mkdir(testDir, 0755); err != nil {
+			t.Fatalf("Failed to create testdata dir: %v", err)
+		}
+	}
+
+	testFile := filepath.Join(testDir, "temp_tasks.csv")
+	defer os.Remove(testFile) // Очистка после тестов
+
 	store := NewCSVStorage(testFile)
-	defer func() {
-		// Очистка после тестов
-		_ = os.Remove(testFile)
-	}()
 
 	t.Run("Create and Get Task", func(t *testing.T) {
 		task := &models.Task{
@@ -26,12 +31,10 @@ func TestCSVStorage(t *testing.T) {
 			Description: "Test Description",
 		}
 
-		// Тест CreateTask с контекстом
 		if err := store.CreateTask(ctx, task); err != nil {
 			t.Fatalf("CreateTask failed: %v", err)
 		}
 
-		// Тест GetTask с контекстом
 		found, err := store.GetTask(ctx, task.ID)
 		if err != nil {
 			t.Fatalf("GetTask failed: %v", err)
@@ -42,7 +45,6 @@ func TestCSVStorage(t *testing.T) {
 	})
 
 	t.Run("List Tasks", func(t *testing.T) {
-		// Тест ListTasks с контекстом
 		tasks, err := store.ListTasks(ctx)
 		if err != nil {
 			t.Fatalf("ListTasks failed: %v", err)
