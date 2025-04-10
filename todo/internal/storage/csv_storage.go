@@ -1,142 +1,147 @@
 package storage
 
 import (
-	"context"
 	"encoding/csv"
-	"github.com/adsyandex/otus_shool/todo/internal/models"
 	"os"
 	"strconv"
+	"sync"
 	"time"
+	"context"
+
+	"github.com/adsyandex/otus_shool/todo/internal/models"
+	"github.com/google/uuid"
 )
 
 type CSVStorage struct {
-	filePath string
+	mu     sync.Mutex
+	file   string
+	tasks  []*models.Task
+	//nextID int
 }
 
-func NewCSVStorage(filePath string) Storage {
-	return &CSVStorage{filePath: filePath}
-}
-
-func (cs *CSVStorage) GetTasks(ctx context.Context) ([]models.Task, error) {
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	default:
-		file, err := os.Open(cs.filePath)
-		if os.IsNotExist(err) {
-			return []models.Task{}, nil
-		}
-		if err != nil {
-			return nil, err
-		}
-		defer file.Close()
-
-		reader := csv.NewReader(file)
-		records, err := reader.ReadAll()
-		if err != nil {
-			return nil, err
-		}
-
-		var tasks []models.Task
-		for _, record := range records {
-			id, _ := strconv.Atoi(record[0])
-			createdAt, _ := time.Parse(time.RFC3339, record[4])
-			updatedAt, _ := time.Parse(time.RFC3339, record[5])
-
-			tasks = append(tasks, models.Task{
-				ID:          id,
-				Title:       record[1],
-				Description: record[2],
-				Status:      record[3],
-				CreatedAt:   createdAt,
-				UpdatedAt:   updatedAt,
-			})
-		}
-		return tasks, nil
+func NewCSVStorage(filename string) *CSVStorage {
+	s := &CSVStorage{
+		file:  filename,
+		tasks: make([]*models.Task, 0),
 	}
+	s.loadFromFile()
+	return s
 }
 
-func (cs *CSVStorage) GetTaskByID(ctx context.Context, id int) (models.Task, error) {
-	tasks, err := cs.GetTasks(ctx)
-	if err != nil {
-		return models.Task{}, err
-	}
+func (s *CSVStorage) CreateTask(ctx context.Context, task *models.Task) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
-	for _, task := range tasks {
+	task.ID = uuid.New().String() // Генерация UUID вместо числового ID
+	task.CreatedAt = time.Now()
+	task.UpdatedAt = time.Now()
+	s.tasks = append(s.tasks, task)
+	return s.saveToFile()
+}
+
+func (s *CSVStorage) GetTask(ctx context.Context,id string) (*models.Task, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for _, task := range s.tasks {
 		if task.ID == id {
 			return task, nil
 		}
 	}
-	return models.Task{}, ErrNotFound
+	return nil, os.ErrNotExist
 }
 
-func (cs *CSVStorage) SaveTask(ctx context.Context, task models.Task) error {
-	tasks, err := cs.GetTasks(ctx)
-	if err != nil {
-		return err
-	}
+// Добавьте остальные методы (UpdateTask, DeleteTask, ListTasks) по аналогии
+func (s *CSVStorage) UpdateTask(ctx context.Context, task *models.Task) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
-	tasks = append(tasks, task)
-	return cs.saveAllTasks(ctx, tasks)
-}
-
-func (cs *CSVStorage) UpdateTask(ctx context.Context, updated models.Task) error {
-	tasks, err := cs.GetTasks(ctx)
-	if err != nil {
-		return err
-	}
-
-	for i, task := range tasks {
-		if task.ID == updated.ID {
-			tasks[i] = updated
-			return cs.saveAllTasks(ctx, tasks)
+	for i, t := range s.tasks {
+		if t.ID == task.ID {
+			s.tasks[i] = task
+			return s.saveToFile()
 		}
 	}
-	return ErrNotFound
+	return os.ErrNotExist
 }
 
-func (cs *CSVStorage) DeleteTask(ctx context.Context, id int) error {
-	tasks, err := cs.GetTasks(ctx)
-	if err != nil {
-		return err
-	}
+func (s *CSVStorage) DeleteTask(ctx context.Context, id string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
-	for i, task := range tasks {
+	for i, task := range s.tasks {
 		if task.ID == id {
-			tasks = append(tasks[:i], tasks[i+1:]...)
-			return cs.saveAllTasks(ctx, tasks)
+			s.tasks = append(s.tasks[:i], s.tasks[i+1:]...)
+			return s.saveToFile()
 		}
 	}
 	return ErrNotFound
 }
 
-func (cs *CSVStorage) saveAllTasks(ctx context.Context, tasks []models.Task) error {
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	default:
-		file, err := os.Create(cs.filePath)
-		if err != nil {
+func (s *CSVStorage) ListTasks(ctx context.Context) ([]*models.Task, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	tasks := make([]*models.Task, len(s.tasks))
+	copy(tasks, s.tasks)
+	return tasks, nil
+}
+
+func (s *CSVStorage) loadFromFile() {
+	file, err := os.Open(s.file)
+	if err != nil {
+		return
+	}
+	defer file.Close()
+
+	reader := csv.NewReader(file)
+	records, _ := reader.ReadAll()
+
+	for _, record := range records {
+		if len(record) < 5 {
+			continue
+		}
+
+		completed, _ := strconv.ParseBool(record[3])
+		createdAt, _ := time.Parse(time.RFC3339, record[4])
+		updatedAt := createdAt
+		if len(record) > 5 {
+			updatedAt, _ = time.Parse(time.RFC3339, record[5])
+		}
+
+		s.tasks = append(s.tasks, &models.Task{
+			ID:          record[0],
+			Title:       record[1],
+			Description: record[2],
+			Completed:   completed,
+			CreatedAt:   createdAt,
+			UpdatedAt:   updatedAt,
+		})
+	}
+}
+
+func (s *CSVStorage) saveToFile() error {
+	file, err := os.Create(s.file)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	writer := csv.NewWriter(file)
+	defer writer.Flush()
+
+	for _, task := range s.tasks {
+		record := []string{
+			task.ID,
+			task.Title,
+			task.Description,
+			strconv.FormatBool(task.Completed),
+			task.CreatedAt.Format(time.RFC3339),
+			task.UpdatedAt.Format(time.RFC3339),
+		}
+		if err := writer.Write(record); err != nil {
 			return err
 		}
-		defer file.Close()
-
-		writer := csv.NewWriter(file)
-		defer writer.Flush()
-
-		for _, task := range tasks {
-			record := []string{
-				strconv.Itoa(task.ID),
-				task.Title,
-				task.Description,
-				task.Status,
-				task.CreatedAt.Format(time.RFC3339),
-				task.UpdatedAt.Format(time.RFC3339),
-			}
-			if err := writer.Write(record); err != nil {
-				return err
-			}
-		}
-		return nil
 	}
+	return nil
 }
