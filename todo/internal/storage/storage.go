@@ -14,5 +14,5 @@ type Storage interface {
 	GetTask(ctx context.Context, id string) (*models.Task, error)
 	UpdateTask(ctx context.Context, task *models.Task) error
 	DeleteTask(ctx context.Context, id string) error
-	ListTasks(ctx context.Context) ([]*models.Task, error) // Заменили GetTasks на ListTasks
+	ListTasks(ctx context.Context) ([]*models.Task, error) 
 }

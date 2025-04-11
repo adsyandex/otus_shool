@@ -51,13 +51,13 @@ func (s *CSVStorage) GetTask(ctx context.Context,id string) (*models.Task, error
 	return nil, os.ErrNotExist
 }
 
-// Добавьте остальные методы (UpdateTask, DeleteTask, ListTasks) по аналогии
 func (s *CSVStorage) UpdateTask(ctx context.Context, task *models.Task) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	for i, t := range s.tasks {
 		if t.ID == task.ID {
+			task.UpdatedAt = time.Now()
 			s.tasks[i] = task
 			return s.saveToFile()
 		}
