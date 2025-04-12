@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.6
 // 	protoc        v3.21.12
-// source: internal/api/grpc/pb/todo.proto
+// source: todo.proto
 
 package todo
 
@@ -35,7 +35,7 @@ type Task struct {
 
 func (x *Task) Reset() {
 	*x = Task{}
-	mi := &file_internal_api_grpc_pb_todo_proto_msgTypes[0]
+	mi := &file_todo_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -47,7 +47,7 @@ func (x *Task) String() string {
 func (*Task) ProtoMessage() {}
 
 func (x *Task) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_api_grpc_pb_todo_proto_msgTypes[0]
+	mi := &file_todo_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -60,7 +60,7 @@ func (x *Task) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Task.ProtoReflect.Descriptor instead.
 func (*Task) Descriptor() ([]byte, []int) {
-	return file_internal_api_grpc_pb_todo_proto_rawDescGZIP(), []int{0}
+	return file_todo_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *Task) GetId() string {
@@ -115,7 +115,7 @@ type CreateTaskRequest struct {
 
 func (x *CreateTaskRequest) Reset() {
 	*x = CreateTaskRequest{}
-	mi := &file_internal_api_grpc_pb_todo_proto_msgTypes[1]
+	mi := &file_todo_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -127,7 +127,7 @@ func (x *CreateTaskRequest) String() string {
 func (*CreateTaskRequest) ProtoMessage() {}
 
 func (x *CreateTaskRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_api_grpc_pb_todo_proto_msgTypes[1]
+	mi := &file_todo_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -140,7 +140,7 @@ func (x *CreateTaskRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateTaskRequest.ProtoReflect.Descriptor instead.
 func (*CreateTaskRequest) Descriptor() ([]byte, []int) {
-	return file_internal_api_grpc_pb_todo_proto_rawDescGZIP(), []int{1}
+	return file_todo_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *CreateTaskRequest) GetTitle() string {
@@ -166,7 +166,7 @@ type GetTaskRequest struct {
 
 func (x *GetTaskRequest) Reset() {
 	*x = GetTaskRequest{}
-	mi := &file_internal_api_grpc_pb_todo_proto_msgTypes[2]
+	mi := &file_todo_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -178,7 +178,7 @@ func (x *GetTaskRequest) String() string {
 func (*GetTaskRequest) ProtoMessage() {}
 
 func (x *GetTaskRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_api_grpc_pb_todo_proto_msgTypes[2]
+	mi := &file_todo_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -191,7 +191,7 @@ func (x *GetTaskRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetTaskRequest.ProtoReflect.Descriptor instead.
 func (*GetTaskRequest) Descriptor() ([]byte, []int) {
-	return file_internal_api_grpc_pb_todo_proto_rawDescGZIP(), []int{2}
+	return file_todo_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *GetTaskRequest) GetId() string {
@@ -213,7 +213,7 @@ type UpdateTaskRequest struct {
 
 func (x *UpdateTaskRequest) Reset() {
 	*x = UpdateTaskRequest{}
-	mi := &file_internal_api_grpc_pb_todo_proto_msgTypes[3]
+	mi := &file_todo_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -225,7 +225,7 @@ func (x *UpdateTaskRequest) String() string {
 func (*UpdateTaskRequest) ProtoMessage() {}
 
 func (x *UpdateTaskRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_api_grpc_pb_todo_proto_msgTypes[3]
+	mi := &file_todo_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -238,7 +238,7 @@ func (x *UpdateTaskRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateTaskRequest.ProtoReflect.Descriptor instead.
 func (*UpdateTaskRequest) Descriptor() ([]byte, []int) {
-	return file_internal_api_grpc_pb_todo_proto_rawDescGZIP(), []int{3}
+	return file_todo_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *UpdateTaskRequest) GetId() string {
@@ -278,7 +278,7 @@ type DeleteTaskRequest struct {
 
 func (x *DeleteTaskRequest) Reset() {
 	*x = DeleteTaskRequest{}
-	mi := &file_internal_api_grpc_pb_todo_proto_msgTypes[4]
+	mi := &file_todo_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -290,7 +290,7 @@ func (x *DeleteTaskRequest) String() string {
 func (*DeleteTaskRequest) ProtoMessage() {}
 
 func (x *DeleteTaskRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_api_grpc_pb_todo_proto_msgTypes[4]
+	mi := &file_todo_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -303,7 +303,7 @@ func (x *DeleteTaskRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteTaskRequest.ProtoReflect.Descriptor instead.
 func (*DeleteTaskRequest) Descriptor() ([]byte, []int) {
-	return file_internal_api_grpc_pb_todo_proto_rawDescGZIP(), []int{4}
+	return file_todo_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *DeleteTaskRequest) GetId() string {
@@ -322,7 +322,7 @@ type DeleteTaskResponse struct {
 
 func (x *DeleteTaskResponse) Reset() {
 	*x = DeleteTaskResponse{}
-	mi := &file_internal_api_grpc_pb_todo_proto_msgTypes[5]
+	mi := &file_todo_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -334,7 +334,7 @@ func (x *DeleteTaskResponse) String() string {
 func (*DeleteTaskResponse) ProtoMessage() {}
 
 func (x *DeleteTaskResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_api_grpc_pb_todo_proto_msgTypes[5]
+	mi := &file_todo_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -347,7 +347,7 @@ func (x *DeleteTaskResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteTaskResponse.ProtoReflect.Descriptor instead.
 func (*DeleteTaskResponse) Descriptor() ([]byte, []int) {
-	return file_internal_api_grpc_pb_todo_proto_rawDescGZIP(), []int{5}
+	return file_todo_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *DeleteTaskResponse) GetSuccess() bool {
@@ -366,7 +366,7 @@ type TaskResponse struct {
 
 func (x *TaskResponse) Reset() {
 	*x = TaskResponse{}
-	mi := &file_internal_api_grpc_pb_todo_proto_msgTypes[6]
+	mi := &file_todo_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -378,7 +378,7 @@ func (x *TaskResponse) String() string {
 func (*TaskResponse) ProtoMessage() {}
 
 func (x *TaskResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_api_grpc_pb_todo_proto_msgTypes[6]
+	mi := &file_todo_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -391,7 +391,7 @@ func (x *TaskResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TaskResponse.ProtoReflect.Descriptor instead.
 func (*TaskResponse) Descriptor() ([]byte, []int) {
-	return file_internal_api_grpc_pb_todo_proto_rawDescGZIP(), []int{6}
+	return file_todo_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *TaskResponse) GetTask() *Task {
@@ -411,7 +411,7 @@ type ListTasksRequest struct {
 
 func (x *ListTasksRequest) Reset() {
 	*x = ListTasksRequest{}
-	mi := &file_internal_api_grpc_pb_todo_proto_msgTypes[7]
+	mi := &file_todo_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -423,7 +423,7 @@ func (x *ListTasksRequest) String() string {
 func (*ListTasksRequest) ProtoMessage() {}
 
 func (x *ListTasksRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_api_grpc_pb_todo_proto_msgTypes[7]
+	mi := &file_todo_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -436,7 +436,7 @@ func (x *ListTasksRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListTasksRequest.ProtoReflect.Descriptor instead.
 func (*ListTasksRequest) Descriptor() ([]byte, []int) {
-	return file_internal_api_grpc_pb_todo_proto_rawDescGZIP(), []int{7}
+	return file_todo_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *ListTasksRequest) GetLimit() int32 {
@@ -463,7 +463,7 @@ type ListTasksResponse struct {
 
 func (x *ListTasksResponse) Reset() {
 	*x = ListTasksResponse{}
-	mi := &file_internal_api_grpc_pb_todo_proto_msgTypes[8]
+	mi := &file_todo_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -475,7 +475,7 @@ func (x *ListTasksResponse) String() string {
 func (*ListTasksResponse) ProtoMessage() {}
 
 func (x *ListTasksResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_api_grpc_pb_todo_proto_msgTypes[8]
+	mi := &file_todo_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -488,7 +488,7 @@ func (x *ListTasksResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListTasksResponse.ProtoReflect.Descriptor instead.
 func (*ListTasksResponse) Descriptor() ([]byte, []int) {
-	return file_internal_api_grpc_pb_todo_proto_rawDescGZIP(), []int{8}
+	return file_todo_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *ListTasksResponse) GetTasks() []*Task {
@@ -505,11 +505,12 @@ func (x *ListTasksResponse) GetTotal() int32 {
 	return 0
 }
 
-var File_internal_api_grpc_pb_todo_proto protoreflect.FileDescriptor
+var File_todo_proto protoreflect.FileDescriptor
 
-const file_internal_api_grpc_pb_todo_proto_rawDesc = "" +
+const file_todo_proto_rawDesc = "" +
 	"\n" +
-	"\x1finternal/api/grpc/pb/todo.proto\x12\x04todo\"\xaa\x01\n" +
+	"\n" +
+	"todo.proto\x12\x04todo\"\xaa\x01\n" +
 	"\x04Task\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12 \n" +
@@ -554,19 +555,19 @@ const file_internal_api_grpc_pb_todo_proto_rawDesc = "" +
 	"\tListTasks\x12\x16.todo.ListTasksRequest\x1a\x17.todo.ListTasksResponseB\bZ\x06.;todob\x06proto3"
 
 var (
-	file_internal_api_grpc_pb_todo_proto_rawDescOnce sync.Once
-	file_internal_api_grpc_pb_todo_proto_rawDescData []byte
+	file_todo_proto_rawDescOnce sync.Once
+	file_todo_proto_rawDescData []byte
 )
 
-func file_internal_api_grpc_pb_todo_proto_rawDescGZIP() []byte {
-	file_internal_api_grpc_pb_todo_proto_rawDescOnce.Do(func() {
-		file_internal_api_grpc_pb_todo_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_internal_api_grpc_pb_todo_proto_rawDesc), len(file_internal_api_grpc_pb_todo_proto_rawDesc)))
+func file_todo_proto_rawDescGZIP() []byte {
+	file_todo_proto_rawDescOnce.Do(func() {
+		file_todo_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_todo_proto_rawDesc), len(file_todo_proto_rawDesc)))
 	})
-	return file_internal_api_grpc_pb_todo_proto_rawDescData
+	return file_todo_proto_rawDescData
 }
 
-var file_internal_api_grpc_pb_todo_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
-var file_internal_api_grpc_pb_todo_proto_goTypes = []any{
+var file_todo_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_todo_proto_goTypes = []any{
 	(*Task)(nil),               // 0: todo.Task
 	(*CreateTaskRequest)(nil),  // 1: todo.CreateTaskRequest
 	(*GetTaskRequest)(nil),     // 2: todo.GetTaskRequest
@@ -577,7 +578,7 @@ var file_internal_api_grpc_pb_todo_proto_goTypes = []any{
 	(*ListTasksRequest)(nil),   // 7: todo.ListTasksRequest
 	(*ListTasksResponse)(nil),  // 8: todo.ListTasksResponse
 }
-var file_internal_api_grpc_pb_todo_proto_depIdxs = []int32{
+var file_todo_proto_depIdxs = []int32{
 	0, // 0: todo.TaskResponse.task:type_name -> todo.Task
 	0, // 1: todo.ListTasksResponse.tasks:type_name -> todo.Task
 	1, // 2: todo.TodoService.CreateTask:input_type -> todo.CreateTaskRequest
@@ -597,26 +598,26 @@ var file_internal_api_grpc_pb_todo_proto_depIdxs = []int32{
 	0, // [0:2] is the sub-list for field type_name
 }
 
-func init() { file_internal_api_grpc_pb_todo_proto_init() }
-func file_internal_api_grpc_pb_todo_proto_init() {
-	if File_internal_api_grpc_pb_todo_proto != nil {
+func init() { file_todo_proto_init() }
+func file_todo_proto_init() {
+	if File_todo_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_internal_api_grpc_pb_todo_proto_rawDesc), len(file_internal_api_grpc_pb_todo_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_todo_proto_rawDesc), len(file_todo_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_internal_api_grpc_pb_todo_proto_goTypes,
-		DependencyIndexes: file_internal_api_grpc_pb_todo_proto_depIdxs,
-		MessageInfos:      file_internal_api_grpc_pb_todo_proto_msgTypes,
+		GoTypes:           file_todo_proto_goTypes,
+		DependencyIndexes: file_todo_proto_depIdxs,
+		MessageInfos:      file_todo_proto_msgTypes,
 	}.Build()
-	File_internal_api_grpc_pb_todo_proto = out.File
-	file_internal_api_grpc_pb_todo_proto_goTypes = nil
-	file_internal_api_grpc_pb_todo_proto_depIdxs = nil
+	File_todo_proto = out.File
+	file_todo_proto_goTypes = nil
+	file_todo_proto_depIdxs = nil
 }
