@@ -1,19 +1,36 @@
 package api
 
 import (
-	"github.com/adsyandex/otus_shool/todo/internal/task"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
+	"github.com/adsyandex/otus_shool/todo/internal/auth"
+	"github.com/adsyandex/otus_shool/todo/internal/storage"
 )
 
-// SetupRouter настраивает маршруты для API
-func SetupRouter(r *gin.Engine, tm *task.TaskManager) {
-    r.GET("/tasks", func(c *gin.Context) {
-        tasks, err := tm.GetTasks()
-        if err != nil {
-            c.JSON(500, gin.H{"error": err.Error()})
-            return
-        }
-        c.JSON(200, tasks)
-    })
+func SetupRoutes(router *gin.Engine, storage storage.Storage) {
+	handler := NewTaskHandler(storage)
+	
+	// Перенаправление на Swagger UI
+	router.GET("/", func(c *gin.Context) {
+		c.Redirect(http.StatusMovedPermanently, "/swagger/index.html")
+	})
+
+	// Публичные routes
+	router.POST("/login", handler.Login)
+
+	// Защищенные routes
+	authGroup := router.Group("/").Use(auth.AuthMiddleware())
+	{
+		authGroup.GET("/tasks", handler.GetAllTasks)
+		authGroup.POST("/tasks", handler.CreateTask)
+		authGroup.GET("/tasks/:id", handler.GetTask)
+		authGroup.PUT("/tasks/:id", handler.UpdateTask)
+		authGroup.DELETE("/tasks/:id", handler.DeleteTask)
+	}
+
+	// Swagger (оставить только здесь)
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 }
