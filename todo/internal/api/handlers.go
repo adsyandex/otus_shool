@@ -108,12 +108,13 @@ func (h *TaskHandler) CreateTask(c *gin.Context) {
 		return
 	}
 
-	if err := h.storage.SaveTask(c.Request.Context(), task); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
+	createdTask, err := h.storage.SaveTask(c.Request.Context(), task)
+if err != nil {
+    c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+    return
 	}
 
-	c.JSON(http.StatusCreated, task)
+	c.JSON(http.StatusCreated, createdTask)
 }
 
 // GetTask godoc
@@ -174,15 +175,12 @@ func (h *TaskHandler) UpdateTask(c *gin.Context) {
 	}
 	task.ID = id
 
-	if err := h.storage.UpdateTask(c.Request.Context(), task); err != nil {
-		if err == storage.ErrNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Task not found"})
-		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		}
-		return
+	updatedTask, err := h.storage.UpdateTask(c.Request.Context(), task)
+if err != nil {
+    c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+    return
 	}
-	c.JSON(http.StatusOK, task)
+	c.JSON(http.StatusOK, updatedTask)
 }
 
 // DeleteTask godoc
