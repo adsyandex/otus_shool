@@ -14,7 +14,7 @@ import (
 )
 
 type TaskHandler struct {
-	storage storage.Storage
+	redis_logger redis_logger.Storage
 }
 
 type LoginRequest struct {
@@ -22,8 +22,8 @@ type LoginRequest struct {
 	Password string `json:"password" binding:"required"`
 }
 
-func NewTaskHandler(storage storage.Storage) *TaskHandler {
-	return &TaskHandler{storage: storage}
+func NewTaskHandler(redis_logger redis_logger.Storage) *TaskHandler {
+	return &TaskHandler{redis_logger: redis_logger}
 }
 
 // Login godoc
@@ -76,7 +76,7 @@ func (h *TaskHandler) Login(c *gin.Context) {
 // @Security ApiKeyAuth
 // @Router /tasks [get]
 func (h *TaskHandler) GetAllTasks(c *gin.Context) {
-	tasks, err := h.storage.GetTasks(c.Request.Context())
+	tasks, err := h.redis_logger.GetTasks(c.Request.Context())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -108,7 +108,7 @@ func (h *TaskHandler) CreateTask(c *gin.Context) {
 		return
 	}
 
-	createdTask, err := h.storage.SaveTask(c.Request.Context(), task)
+	createdTask, err := h.redis_logger.SaveTask(c.Request.Context(), task)
 if err != nil {
     c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
     return
@@ -135,9 +135,9 @@ func (h *TaskHandler) GetTask(c *gin.Context) {
 		return
 	}
 
-	task, err := h.storage.GetTaskByID(c.Request.Context(), id)
+	task, err := h.redis_logger.GetTaskByID(c.Request.Context(), id)
 	if err != nil {
-		if err == storage.ErrNotFound {
+		if err == redis_logger.ErrNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Task not found"})
 		} else {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -175,7 +175,7 @@ func (h *TaskHandler) UpdateTask(c *gin.Context) {
 	}
 	task.ID = id
 
-	updatedTask, err := h.storage.UpdateTask(c.Request.Context(), task)
+	updatedTask, err := h.redis_logger.UpdateTask(c.Request.Context(), task)
 if err != nil {
     c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
     return
@@ -201,8 +201,8 @@ func (h *TaskHandler) DeleteTask(c *gin.Context) {
 		return
 	}
 
-	if err := h.storage.DeleteTask(c.Request.Context(), id); err != nil {
-		if err == storage.ErrNotFound {
+	if err := h.redis_logger.DeleteTask(c.Request.Context(), id); err != nil {
+		if err == redis_logger.ErrNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Task not found"})
 		} else {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

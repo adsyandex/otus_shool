@@ -36,7 +36,7 @@ func main() {
 	}
 
 	// 2. Инициализация хранилища
-	store := storage.NewCSVStorage("data/tasks.csv")
+	store := redis_logger.NewCSVStorage("data/tasks.csv")
 
 	// 3. Создание роутера с CORS
 	router := gin.Default()

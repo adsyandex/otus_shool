@@ -10,8 +10,8 @@ import (
 	"github.com/adsyandex/otus_shool/todo/internal/storage"
 )
 
-func SetupRoutes(router *gin.Engine, storage storage.Storage) {
-	handler := NewTaskHandler(storage)
+func SetupRoutes(router *gin.Engine, redis_logger redis_logger.Storage) {
+	handler := NewTaskHandler(redis_logger)
 	
 	// Перенаправление на Swagger UI
 	router.GET("/", func(c *gin.Context) {

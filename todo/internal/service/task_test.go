@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-// MockStorage реализует мок для storage.Storage
+// MockStorage реализует мок для redis_logger.Storage
 type MockStorage struct {
 	mock.Mock
 }
@@ -108,11 +108,11 @@ func TestTaskService_GetTask(t *testing.T) {
 	// Задача не найдена
 	t.Run("not found", func(t *testing.T) {
 		mockStorage.On("GetTaskByID", ctx, 999).
-			Return(models.Task{}, storage.ErrNotFound)
+			Return(models.Task{}, redis_logger.ErrNotFound)
 
 		_, err := service.GetTask(ctx, 999)
 
-		assert.ErrorIs(t, err, storage.ErrNotFound)
+		assert.ErrorIs(t, err, redis_logger.ErrNotFound)
 	})
 
 	mockStorage.AssertExpectations(t)

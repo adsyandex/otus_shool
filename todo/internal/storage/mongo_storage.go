@@ -1,4 +1,4 @@
-package storage_test
+package storage
 
 import (
 	"context"
@@ -16,7 +16,7 @@ func TestCSVStorage(t *testing.T) {
 	assert.NoError(t, err)
 	defer os.Remove(tmpFile.Name())
 
-	store := storage.NewCSVStorage(tmpFile.Name())
+	store := redis_logger.NewCSVStorage(tmpFile.Name())
 
 	ctx := context.Background()
 
@@ -55,6 +55,6 @@ func TestCSVStorage(t *testing.T) {
 		assert.NoError(t, err)
 		
 		_, err = store.GetTaskByID(ctx, created.ID)
-		assert.ErrorIs(t, err, storage.ErrNotFound)
+		assert.ErrorIs(t, err, redis_logger.ErrNotFound)
 	})
 }
