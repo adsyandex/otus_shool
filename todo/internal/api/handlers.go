@@ -1,213 +1,153 @@
-// @securityDefinitions.apikey ApiKeyAuth
-// @in header
-// @name Authorization
 package api
 
 import (
+	//"context"
+	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
+	"time"
 
-	"github.com/gin-gonic/gin"
-	"github.com/adsyandex/otus_shool/todo/internal/auth"
 	"github.com/adsyandex/otus_shool/todo/internal/models"
 	"github.com/adsyandex/otus_shool/todo/internal/storage"
 )
 
-type TaskHandler struct {
-	redis_logger redis_logger.Storage
+// Handler структура для обработчиков API
+type Handler struct {
+	storage storage.Storage
+	logger  storage.Logger // Используем интерфейс Logger из storage
 }
 
-type LoginRequest struct {
-	Username string `json:"username" binding:"required"`
-	Password string `json:"password" binding:"required"`
-}
-
-func NewTaskHandler(redis_logger redis_logger.Storage) *TaskHandler {
-	return &TaskHandler{redis_logger: redis_logger}
-}
-
-// Login godoc
-// @Summary User login
-// @Description Authenticate user and get JWT token
-// @Tags auth
-// @Accept json
-// @Produce json
-// @Param credentials body LoginRequest true "User credentials"
-// @Success 200 {object} map[string]interface{}
-// @Failure 400 {object} map[string]string
-// @Failure 401 {object} map[string]string
-// @Failure 500 {object} map[string]string
-// @Router /login [post]
-func (h *TaskHandler) Login(c *gin.Context) {
-	var req LoginRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request format"})
-		return
+// NewHandler создает новый экземпляр Handler
+func NewHandler(storage storage.Storage, logger storage.Logger) *Handler {
+	return &Handler{
+		storage: storage,
+		logger:  logger,
 	}
-
-	// Временная заглушка - в реальном проекте заменить на проверку из БД
-	if req.Username != "admin" || req.Password != "password" {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
-		return
-	}
-
-	token, err := auth.GenerateToken(1) // ID пользователя
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"token": token,
-		"user": gin.H{
-			"id":       1,
-			"username": "admin",
-		},
-	})
 }
 
-// GetAllTasks godoc
-// @Summary Get all tasks
-// @Description Get list of all tasks
-// @Tags tasks
-// @Produce json
-// @Success 200 {array} models.Task
-// @Failure 500 {object} map[string]string
-// @Security ApiKeyAuth
-// @Router /tasks [get]
-func (h *TaskHandler) GetAllTasks(c *gin.Context) {
-	tasks, err := h.redis_logger.GetTasks(c.Request.Context())
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(http.StatusOK, tasks)
-}
+func (h *Handler) CreateTask(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 
-// CreateTask godoc
-// @Summary Create a new task
-// @Description Create a new task with the input payload
-// @Tags tasks
-// @Accept json
-// @Produce json
-// @Param task body models.Task true "Task object"
-// @Success 201 {object} models.Task
-// @Failure 400 {object} map[string]string
-// @Failure 500 {object} map[string]string
-// @Security ApiKeyAuth
-// @Router /tasks [post]
-func (h *TaskHandler) CreateTask(c *gin.Context) {
 	var task models.Task
-	if err := c.ShouldBindJSON(&task); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	if task.Title == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Title is required"})
+	// Исправленный вызов с контекстом
+	if err := h.storage.SaveTask(ctx, task); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	createdTask, err := h.redis_logger.SaveTask(c.Request.Context(), task)
-if err != nil {
-    c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-    return
+	if err := h.logger.LogAction(ctx, "task_created", 24*time.Hour); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
-	c.JSON(http.StatusCreated, createdTask)
+	w.WriteHeader(http.StatusCreated)
 }
 
-// GetTask godoc
-// @Summary Get a task by ID
-// @Description Get a single task by its ID
-// @Tags tasks
-// @Produce json
-// @Param id path int true "Task ID"
-// @Success 200 {object} models.Task
-// @Failure 400 {object} map[string]string
-// @Failure 404 {object} map[string]string
-// @Security ApiKeyAuth
-// @Router /tasks/{id} [get]
-func (h *TaskHandler) GetTask(c *gin.Context) {
-	id, err := strconv.Atoi(c.Param("id"))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid task ID"})
-		return
-	}
+func (h *Handler) GetTask(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	id := r.PathValue("id")
 
-	task, err := h.redis_logger.GetTaskByID(c.Request.Context(), id)
+	// Исправленный вызов с контекстом
+	task, err := h.storage.GetTask(ctx, id)
 	if err != nil {
-		if err == redis_logger.ErrNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Task not found"})
-		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		if errors.Is(err, storage.ErrNotFound) { // Используем storage.ErrNotFound
+			http.Error(w, "task not found", http.StatusNotFound)
+			return
 		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	c.JSON(http.StatusOK, task)
+
+	if err := h.logger.LogAction(ctx, "task_retrieved", time.Hour); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(task)
 }
 
-// UpdateTask godoc
-// @Summary Update an existing task
-// @Description Update a task by ID with the input payload
-// @Tags tasks
-// @Accept json
-// @Produce json
-// @Param id path int true "Task ID"
-// @Param task body models.Task true "Task object"
-// @Success 200 {object} models.Task
-// @Failure 400 {object} map[string]string
-// @Failure 404 {object} map[string]string
-// @Failure 500 {object} map[string]string
-// @Security ApiKeyAuth
-// @Router /tasks/{id} [put]
-func (h *TaskHandler) UpdateTask(c *gin.Context) {
-	id, err := strconv.Atoi(c.Param("id"))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid task ID"})
-		return
-	}
+func (h *Handler) UpdateTask(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	id := r.PathValue("id")
 
 	var task models.Task
-	if err := c.ShouldBindJSON(&task); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	task.ID = id
 
-	updatedTask, err := h.redis_logger.UpdateTask(c.Request.Context(), task)
-if err != nil {
-    c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-    return
+	// Исправленный вызов
+	if err := h.storage.UpdateTask(ctx, task); err != nil {
+		if errors.Is(err, storage.ErrNotFound) {
+			http.Error(w, "task not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
-	c.JSON(http.StatusOK, updatedTask)
+
+	if err := h.logger.LogAction(ctx, "task_updated", 24*time.Hour); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
-// DeleteTask godoc
-// @Summary Delete a task
-// @Description Delete a task by ID
-// @Tags tasks
-// @Param id path int true "Task ID"
-// @Success 204
-// @Failure 400 {object} map[string]string
-// @Failure 404 {object} map[string]string
-// @Failure 500 {object} map[string]string
-// @Security ApiKeyAuth
-// @Router /tasks/{id} [delete]
-func (h *TaskHandler) DeleteTask(c *gin.Context) {
-	id, err := strconv.Atoi(c.Param("id"))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid task ID"})
+func (h *Handler) DeleteTask(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	id := r.PathValue("id")
+
+	// Исправленный вызов
+	if err := h.storage.DeleteTask(ctx, id); err != nil {
+		if errors.Is(err, storage.ErrNotFound) {
+			http.Error(w, "task not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if err := h.redis_logger.DeleteTask(c.Request.Context(), id); err != nil {
-		if err == redis_logger.ErrNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Task not found"})
-		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		}
+	if err := h.logger.LogAction(ctx, "task_deleted", 24*time.Hour); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	c.Status(http.StatusNoContent)
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *Handler) ListTasks(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	completedStr := r.URL.Query().Get("completed")
+
+	var completed *bool
+	if completedStr != "" {
+		val, err := strconv.ParseBool(completedStr)
+		if err != nil {
+			http.Error(w, "invalid completed value", http.StatusBadRequest)
+			return
+		}
+		completed = &val
+	}
+
+	// Исправленный вызов
+	tasks, err := h.storage.ListTasks(ctx, completed)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if err := h.logger.LogAction(ctx, "tasks_listed", time.Hour); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(tasks)
 }
