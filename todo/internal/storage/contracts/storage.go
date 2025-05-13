@@ -12,13 +12,11 @@ var (
 	ErrNotFound = errors.New("not found")
 )
 
-// Logger - интерфейс для логирования действий
 type Logger interface {
 	LogAction(ctx context.Context, action string, ttl time.Duration) error
 	Close() error
 }
 
-// Storage - основной интерфейс хранилища
 type Storage interface {
 	SaveTask(ctx context.Context, task models.Task) error
 	GetTask(ctx context.Context, id string) (*models.Task, error)
