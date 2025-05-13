@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strconv"
 	"time"
+	"log"
 
 	"github.com/adsyandex/otus_shool/todo/internal/models"
 	"github.com/adsyandex/otus_shool/todo/internal/storage"
@@ -27,26 +28,28 @@ func NewHandler(storage storage.Storage, logger storage.Logger) *Handler {
 }
 
 func (h *Handler) CreateTask(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+    ctx := r.Context()
+    
+    var task models.Task
+    if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
+        http.Error(w, err.Error(), http.StatusBadRequest)
+        return
+    }
 
-	var task models.Task
-	if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+    // Основная операция
+    if err := h.storage.SaveTask(ctx, task); err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
 
-	// Исправленный вызов с контекстом
-	if err := h.storage.SaveTask(ctx, task); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+    // Логирование (отдельно обрабатываем ошибку, не влияя на ответ)
+    if err := h.logger.LogAction(ctx, "task_created", 24*time.Hour); err != nil {
+        log.Printf("Failed to log action: %v", err) // Логируем ошибку в серверные логи
+    }
 
-	if err := h.logger.LogAction(ctx, "task_created", 24*time.Hour); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusCreated)
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(http.StatusCreated)
+    json.NewEncoder(w).Encode(task)
 }
 
 func (h *Handler) GetTask(w http.ResponseWriter, r *http.Request) {
