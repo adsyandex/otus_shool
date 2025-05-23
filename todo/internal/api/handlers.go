@@ -3,123 +3,114 @@ package api
 import (
 	//"context"
 	"encoding/json"
-	"errors"
 	"net/http"
 	"strconv"
-	"time"
-	"log"
 
+	"github.com/adsyandex/otus_shool/todo/internal/logger"
 	"github.com/adsyandex/otus_shool/todo/internal/models"
-	"github.com/adsyandex/otus_shool/todo/internal/storage"
+	"github.com/adsyandex/otus_shool/todo/internal/service"
+	"github.com/go-chi/chi/v5"
 )
 
-// Handler структура для обработчиков API
 type Handler struct {
-	storage storage.Storage
-	logger  storage.Logger // Используем интерфейс Logger из storage
+	service *service.TaskService
+	log     *logger.Logger
 }
 
-// NewHandler создает новый экземпляр Handler
-func NewHandler(storage storage.Storage, logger storage.Logger) *Handler {
+func NewHandler(service *service.TaskService, log *logger.Logger) *Handler {
 	return &Handler{
-		storage: storage,
-		logger:  logger,
+		service: service,
+		log:     log,
 	}
 }
 
 func (h *Handler) CreateTask(w http.ResponseWriter, r *http.Request) {
-    ctx := r.Context()
-    
-    var task models.Task
-    if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
-        http.Error(w, err.Error(), http.StatusBadRequest)
-        return
-    }
+	var task models.Task
+	if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
+		h.log.Error("Failed to decode request body", "error", err)
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
 
-    // Основная операция
-    if err := h.storage.SaveTask(ctx, task); err != nil {
-        http.Error(w, err.Error(), http.StatusInternalServerError)
-        return
-    }
+	createdTask, err := h.service.CreateTask(r.Context(), task)
+	if err != nil {
+		h.log.Error("Failed to create task", "error", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
 
-    // Логирование (отдельно обрабатываем ошибку, не влияя на ответ)
-    if err := h.logger.LogAction(ctx, "task_created", 24*time.Hour); err != nil {
-        log.Printf("Failed to log action: %v", err) // Логируем ошибку в серверные логи
-    }
-
-    w.Header().Set("Content-Type", "application/json")
-    w.WriteHeader(http.StatusCreated)
-    json.NewEncoder(w).Encode(task)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(createdTask)
 }
 
 func (h *Handler) GetTask(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	id := r.PathValue("id")
+	id := chi.URLParam(r, "id")
+	if id == "" {
+		http.Error(w, "Task ID is required", http.StatusBadRequest)
+		return
+	}
 
-	// Исправленный вызов с контекстом
-	task, err := h.storage.GetTask(ctx, id)
+	task, err := h.service.GetTask(r.Context(), id)
 	if err != nil {
-		if errors.Is(err, storage.ErrNotFound) { // Используем storage.ErrNotFound
-			http.Error(w, "task not found", http.StatusNotFound)
+		if err == service.ErrTaskNotFound {
+			http.Error(w, "Task not found", http.StatusNotFound)
 			return
 		}
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		h.log.Error("Failed to get task", "error", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 
-	if err := h.logger.LogAction(ctx, "task_retrieved", time.Hour); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(task)
 }
 
 func (h *Handler) UpdateTask(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	id := r.PathValue("id")
+	id := chi.URLParam(r, "id")
+	if id == "" {
+		http.Error(w, "Task ID is required", http.StatusBadRequest)
+		return
+	}
 
 	var task models.Task
 	if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		h.log.Error("Failed to decode request body", "error", err)
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
 	task.ID = id
 
-	// Исправленный вызов
-	if err := h.storage.UpdateTask(ctx, task); err != nil {
-		if errors.Is(err, storage.ErrNotFound) {
-			http.Error(w, "task not found", http.StatusNotFound)
+	updatedTask, err := h.service.UpdateTask(r.Context(), task)
+	if err != nil {
+		if err == service.ErrTaskNotFound {
+			http.Error(w, "Task not found", http.StatusNotFound)
 			return
 		}
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		h.log.Error("Failed to update task", "error", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 
-	if err := h.logger.LogAction(ctx, "task_updated", 24*time.Hour); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(updatedTask)
 }
 
 func (h *Handler) DeleteTask(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	id := r.PathValue("id")
-
-	// Исправленный вызов
-	if err := h.storage.DeleteTask(ctx, id); err != nil {
-		if errors.Is(err, storage.ErrNotFound) {
-			http.Error(w, "task not found", http.StatusNotFound)
-			return
-		}
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	id := chi.URLParam(r, "id")
+	if id == "" {
+		http.Error(w, "Task ID is required", http.StatusBadRequest)
 		return
 	}
 
-	if err := h.logger.LogAction(ctx, "task_deleted", 24*time.Hour); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	err := h.service.DeleteTask(r.Context(), id)
+	if err != nil {
+		if err == service.ErrTaskNotFound {
+			http.Error(w, "Task not found", http.StatusNotFound)
+			return
+		}
+		h.log.Error("Failed to delete task", "error", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 
@@ -127,30 +118,32 @@ func (h *Handler) DeleteTask(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) ListTasks(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
 	completedStr := r.URL.Query().Get("completed")
+	priorityStr := r.URL.Query().Get("priority")
 
-	var completed *bool
+	filter := models.TaskFilter{}
+
 	if completedStr != "" {
-		val, err := strconv.ParseBool(completedStr)
-		if err != nil {
-			http.Error(w, "invalid completed value", http.StatusBadRequest)
-			return
+		completed, err := strconv.ParseBool(completedStr)
+		if err == nil {
+			filter.Completed = &completed
 		}
-		completed = &val
 	}
 
-	// Исправленный вызов
-	tasks, err := h.storage.ListTasks(ctx, completed)
+	if priorityStr != "" {
+		priority, err := strconv.Atoi(priorityStr)
+		if err == nil {
+			filter.Priority = &priority
+		}
+	}
+
+	tasks, err := h.service.ListTasks(r.Context(), filter)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		h.log.Error("Failed to list tasks", "error", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 
-	if err := h.logger.LogAction(ctx, "tasks_listed", time.Hour); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(tasks)
 }

@@ -1,0 +1,43 @@
+# config.yaml - конфигурация приложения Todo
+
+server:
+  port: 8080                 # Порт, на котором работает приложение
+  shutdown_timeout: 10s       # Таймаут для graceful shutdown
+
+log:
+  level: "debug"              # Уровень логирования (debug, info, warn, error)
+
+# Настройки PostgreSQL
+postgres:
+  host: "postgres"            # Хост (имя сервиса в docker-compose)
+  port: 5432                  # Порт
+  user: "todo"                # Пользователь
+  password: "todo"            # Пароль
+  dbname: "todo"              # Имя базы данных
+  sslmode: "disable"          # Режим SSL
+  max_open_conns: 25          # Максимальное количество открытых соединений
+  max_idle_conns: 5           # Максимальное количество idle-соединений
+  conn_max_lifetime: "5m"     # Максимальное время жизни соединения
+
+# Настройки MongoDB
+mongo:
+  host: "mongodb"             # Хост (имя сервиса в docker-compose)
+  port: 27017                 # Порт
+  username: "root"            # Пользователь
+  password: "example"         # Пароль
+  database: "todo"            # Имя базы данных
+  auth_source: "admin"        # База для аутентификации
+  connect_timeout: "10s"      # Таймаут подключения
+
+# Настройки Redis
+redis:
+  host: "redis"               # Хост (имя сервиса в docker-compose)
+  port: 6379                  # Порт
+  password: ""                # Пароль (если есть)
+  db: 0                       # Номер базы данных
+  dial_timeout: "5s"          # Таймаут подключения
+
+# Выбор хранилища данных
+storage:
+  type: "postgres"            # postgres или mongo
+  # Дополнительные настройки хранилища при необходимости

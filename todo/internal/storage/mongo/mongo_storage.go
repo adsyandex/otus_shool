@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	
-	"github.com/adsyandex/otus_shool/todo/internal/storage"
+
 	"github.com/adsyandex/otus_shool/todo/internal/models"
+	"github.com/adsyandex/otus_shool/todo/internal/storage"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -54,8 +54,8 @@ func (s *MongoStorage) UpdateTask(ctx context.Context, task models.Task) error {
 
 func (s *MongoStorage) DeleteTask(ctx context.Context, id string) error {
 	res, err := s.collection.DeleteOne(ctx, bson.M{"_id": id})
-	if err != nil {                                        // Сначала проверяем err
-        return fmt.Errorf("delete failed: %w", err)        // Оборачиваем исходную ошибку с контекстом (%w)
+	if err != nil { // Сначала проверяем err
+		return fmt.Errorf("delete failed: %w", err) // Оборачиваем исходную ошибку с контекстом (%w)
 	}
 	if res.DeletedCount == 0 {
 		return storage.ErrNotFound
