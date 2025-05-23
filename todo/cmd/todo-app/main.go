@@ -1,72 +1,110 @@
 package main
 
 import (
-	"log"
+	"context"
+	"database/sql"
+	"fmt"
+	"net/http"
 	"os"
+	"os/signal"
+	"strconv"
+	"syscall"
 	"time"
 
-	"github.com/joho/godotenv" // Добавьте этот импорт
-	"github.com/gin-contrib/cors"
-	"github.com/gin-gonic/gin"
-	_ "github.com/adsyandex/otus_shool/todo/docs"
 	"github.com/adsyandex/otus_shool/todo/internal/api"
-	"github.com/adsyandex/otus_shool/todo/internal/storage"
+	"github.com/adsyandex/otus_shool/todo/internal/config"
+	"github.com/adsyandex/otus_shool/todo/internal/logger"
+	"github.com/adsyandex/otus_shool/todo/internal/service"
+	postgresstorage "github.com/adsyandex/otus_shool/todo/internal/storage/postgres"
+	"github.com/golang-migrate/migrate/v4"
+	postgresdriver "github.com/golang-migrate/migrate/v4/database/postgres"
+	"github.com/golang-migrate/migrate/v4/source/file"
+	_ "github.com/lib/pq"
 )
 
-// @title Todo App API
-// @version 1.0
-// @description This is a sample todo server with JWT authentication
-// @termsOfService http://swagger.io/terms/
-// @contact.name API Support
-// @contact.url http://www.swagger.io/support
-// @contact.email support@swagger.io
-// @license.name Apache 2.0
-// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
-// @host localhost:8080
-// @BasePath /
-// @schemes http
-// @securityDefinitions.apikey ApiKeyAuth
-// @in header
-// @name Authorization
-
 func main() {
-	// 1. Загрузка переменных окружения
-	if err := godotenv.Load(); err != nil {
-		log.Printf("Warning: .env file not found: %v", err)
+	cfg, err := config.Load()
+	if err != nil {
+		log := logger.New("error")
+		log.Fatal("Failed to load config: ", err)
 	}
 
-	// 2. Инициализация хранилища
-	store := storage.NewCSVStorage("data/tasks.csv")
+	log := logger.New(cfg.Log.Level)
+	log.Info("Starting application version 1.0.0")
 
-	// 3. Создание роутера с CORS
-	router := gin.Default()
-	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"*"},
-		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
-		ExposeHeaders:    []string{"Content-Length"},
-		AllowCredentials: true,
-		MaxAge:           12 * time.Hour,
-	}))
+	connStr := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
+		cfg.Postgres.Host, cfg.Postgres.Port, cfg.Postgres.User,
+		cfg.Postgres.Password, cfg.Postgres.DBName, cfg.Postgres.SSLMode)
 
-	// 4. Настройка маршрутов
-	api.SetupRoutes(router, store)
-
-	// 5. Запуск сервера
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
+	db, err := sql.Open("postgres", connStr)
+	if err != nil {
+		log.Fatal("Failed to connect to PostgreSQL: ", err)
 	}
-	log.Printf("Server starting on :%s", port)
-	log.Println("\n=== Проверка переменных окружения ===")
-log.Println("PORT:", os.Getenv("PORT"))
-if secret := os.Getenv("JWT_SECRET"); secret != "" {
-    log.Println("JWT_SECRET: [скрыто] Длина:", len(secret))
-} else {
-    log.Println("JWT_SECRET: не установлен!")
+	defer db.Close()
+
+	if err := db.Ping(); err != nil {
+		log.Fatal("Failed to ping PostgreSQL: ", err)
+	}
+
+	if err := runMigrations(db); err != nil {
+		log.Fatal("Database migrations failed: ", err)
+	}
+
+	storage, err := postgresstorage.NewPostgresStorage(connStr)
+	if err != nil {
+		log.Fatal("Failed to initialize storage: ", err)
+	}
+
+	taskService := service.NewTaskService(storage)
+	router := api.NewRouter(taskService, log)
+
+	srv := &http.Server{
+		Addr:    ":" + strconv.Itoa(cfg.Server.Port),
+		Handler: router,
+	}
+
+	go func() {
+		log.Info("Server starting on port ", cfg.Server.Port)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatal("HTTP server crashed: ", err)
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	log.Info("Shutting down server...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Error("Server shutdown failed: ", err)
+	}
+
+	log.Info("Server stopped gracefully")
 }
 
-	if err := router.Run(":" + port); err != nil {
-		log.Fatalf("Failed to start server: %v", err)
+func runMigrations(db *sql.DB) error {
+	driver, err := postgresdriver.WithInstance(db, &postgresdriver.Config{})
+	if err != nil {
+		return fmt.Errorf("failed to create migration driver: %w", err)
 	}
+
+	fsrc, err := (&file.File{}).Open("file://migrations")
+	if err != nil {
+		return fmt.Errorf("failed to open migrations: %w", err)
+	}
+
+	m, err := migrate.NewWithInstance("file", fsrc, "postgres", driver)
+	if err != nil {
+		return fmt.Errorf("failed to create migration instance: %w", err)
+	}
+
+	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+		return fmt.Errorf("failed to run migrations: %w", err)
+	}
+
+	return nil
 }

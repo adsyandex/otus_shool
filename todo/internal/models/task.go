@@ -3,11 +3,17 @@ package models
 import "time"
 
 type Task struct {
-	ID          int       `json:"id"`
+	ID          string    `json:"id"`
 	Title       string    `json:"title"`
 	Description string    `json:"description"`
-	Status      string    `json:"status"`
+	Completed   bool      `json:"completed"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
-	Completed   bool      `json:"completed"`
+	DueDate     time.Time `json:"due_date,omitempty"`
+	Priority    int       `json:"priority,omitempty"`
+}
+
+type TaskFilter struct {
+	Completed *bool `json:"completed,omitempty"`
+	Priority  *int  `json:"priority,omitempty"`
 }

@@ -1,36 +1,33 @@
 package api
 
 import (
-	"net/http"
-
-	"github.com/gin-gonic/gin"
-	swaggerFiles "github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
-	"github.com/adsyandex/otus_shool/todo/internal/auth"
-	"github.com/adsyandex/otus_shool/todo/internal/storage"
+	"github.com/adsyandex/otus_shool/todo/internal/logger"
+	"github.com/adsyandex/otus_shool/todo/internal/service"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 )
 
-func SetupRoutes(router *gin.Engine, storage storage.Storage) {
-	handler := NewTaskHandler(storage)
-	
-	// Перенаправление на Swagger UI
-	router.GET("/", func(c *gin.Context) {
-		c.Redirect(http.StatusMovedPermanently, "/swagger/index.html")
+func NewRouter(service *service.TaskService, log *logger.Logger) *chi.Mux {
+	router := chi.NewRouter()
+	handler := NewHandler(service, log)
+
+	// Middleware
+	router.Use(middleware.RequestID)
+	router.Use(middleware.RealIP)
+	router.Use(middleware.Logger)
+	router.Use(middleware.Recoverer)
+
+	// Routes
+	router.Route("/tasks", func(r chi.Router) {
+		r.Post("/", handler.CreateTask)
+		r.Get("/", handler.ListTasks)
+
+		r.Route("/{id}", func(r chi.Router) {
+			r.Get("/", handler.GetTask)
+			r.Put("/", handler.UpdateTask)
+			r.Delete("/", handler.DeleteTask)
+		})
 	})
 
-	// Публичные routes
-	router.POST("/login", handler.Login)
-
-	// Защищенные routes
-	authGroup := router.Group("/").Use(auth.AuthMiddleware())
-	{
-		authGroup.GET("/tasks", handler.GetAllTasks)
-		authGroup.POST("/tasks", handler.CreateTask)
-		authGroup.GET("/tasks/:id", handler.GetTask)
-		authGroup.PUT("/tasks/:id", handler.UpdateTask)
-		authGroup.DELETE("/tasks/:id", handler.DeleteTask)
-	}
-
-	// Swagger (оставить только здесь)
-	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	return router
 }
