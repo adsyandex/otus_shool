@@ -3,47 +3,95 @@ package service
 import (
 	"context"
 	"errors"
+
 	"github.com/adsyandex/otus_shool/todo/internal/models"
-	"github.com/adsyandex/otus_shool/todo/internal/storage"
+	"github.com/adsyandex/otus_shool/todo/internal/storage/contracts"
 )
 
-// TaskService реализует бизнес-логику работы с задачами
+var (
+	ErrTaskNotFound = errors.New("task not found")
+)
+
 type TaskService struct {
-	storage storage.Storage
+	storage contracts.Storage
 }
 
-// NewTaskService создает новый экземпляр TaskService
-func NewTaskService(storage storage.Storage) *TaskService {
+func NewTaskService(storage contracts.Storage) *TaskService {
 	return &TaskService{storage: storage}
 }
 
-// CreateTask создает новую задачу с валидацией
 func (s *TaskService) CreateTask(ctx context.Context, task models.Task) (models.Task, error) {
 	if task.Title == "" {
-		return models.Task{}, errors.New("title cannot be empty")
+		return models.Task{}, errors.New("title is required")
 	}
-	return s.storage.SaveTask(ctx, task)
+
+	return s.storage.CreateTask(ctx, task)
 }
 
-// GetTask возвращает задачу по ID
-func (s *TaskService) GetTask(ctx context.Context, id int) (models.Task, error) {
-	return s.storage.GetTaskByID(ctx, id)
+func (s *TaskService) GetTask(ctx context.Context, id string) (models.Task, error) {
+	if id == "" {
+		return models.Task{}, errors.New("id is required")
+	}
+
+	return s.storage.GetTask(ctx, id)
 }
 
-// GetAllTasks возвращает все задачи
-func (s *TaskService) GetAllTasks(ctx context.Context) ([]models.Task, error) {
-	return s.storage.GetTasks(ctx)
-}
-
-// UpdateTask обновляет существующую задачу
 func (s *TaskService) UpdateTask(ctx context.Context, task models.Task) (models.Task, error) {
-	if task.ID == 0 || task.Title == "" {
-		return models.Task{}, errors.New("invalid task data")
+	if task.ID == "" {
+		return models.Task{}, errors.New("id is required")
 	}
+
+	if task.Title == "" {
+		return models.Task{}, errors.New("title is required")
+	}
+
 	return s.storage.UpdateTask(ctx, task)
 }
 
-// DeleteTask удаляет задачу по ID
-func (s *TaskService) DeleteTask(ctx context.Context, id int) error {
+func (s *TaskService) DeleteTask(ctx context.Context, id string) error {
+	if id == "" {
+		return errors.New("id is required")
+	}
+
 	return s.storage.DeleteTask(ctx, id)
+}
+
+func (s *TaskService) ListTasks(ctx context.Context, filter models.TaskFilter) ([]models.Task, error) {
+	return s.storage.ListTasks(ctx, filter)
+}
+
+func (s *TaskService) CompleteTaskWithLog(ctx context.Context, taskID string, logMessage string) error {
+	if taskID == "" {
+		return errors.New("task id is required")
+	}
+
+	if logMessage == "" {
+		return errors.New("log message is required")
+	}
+
+	return s.storage.WithTransaction(ctx, func(tx contracts.Storage) error {
+		// Получаем задачу
+		task, err := tx.GetTask(ctx, taskID)
+		if err != nil {
+			return err
+		}
+
+		// Обновляем статус задачи
+		task.Completed = true
+		if _, err := tx.UpdateTask(ctx, task); err != nil {
+			return err
+		}
+
+		// Здесь можно добавить логирование в другую таблицу...
+		// Например:
+		// if err := tx.CreateLog(ctx, models.Log{
+		//     TaskID:  taskID,
+		//     Message: logMessage,
+		//     Time:    time.Now(),
+		// }); err != nil {
+		//     return err
+		// }
+
+		return nil
+	})
 }
