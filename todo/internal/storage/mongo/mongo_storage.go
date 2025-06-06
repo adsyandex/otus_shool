@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/adsyandex/otus_shool/todo/internal/models"
-	"github.com/adsyandex/otus_shool/todo/internal/storage"
+	"github.com/adsyandex/otus_shool/todo/internal/storage/contracts"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -39,7 +39,7 @@ func (s *MongoStorage) GetTask(ctx context.Context, id string) (*models.Task, er
 	var task models.Task
 	err := s.collection.FindOne(ctx, bson.M{"_id": id}).Decode(&task)
 	if errors.Is(err, mongo.ErrNoDocuments) {
-		return nil, storage.ErrNotFound
+		return nil, contracts.ErrTaskNotFound
 	}
 	return &task, err
 }
@@ -47,7 +47,7 @@ func (s *MongoStorage) GetTask(ctx context.Context, id string) (*models.Task, er
 func (s *MongoStorage) UpdateTask(ctx context.Context, task models.Task) error {
 	res, err := s.collection.UpdateByID(ctx, task.ID, bson.M{"$set": task})
 	if res.MatchedCount == 0 {
-		return storage.ErrNotFound
+		return contracts.ErrTaskNotFound
 	}
 	return err
 }
@@ -58,7 +58,7 @@ func (s *MongoStorage) DeleteTask(ctx context.Context, id string) error {
 		return fmt.Errorf("delete failed: %w", err) // Оборачиваем исходную ошибку с контекстом (%w)
 	}
 	if res.DeletedCount == 0 {
-		return storage.ErrNotFound
+		return contracts.ErrTaskNotFound
 	}
 	return nil
 }
