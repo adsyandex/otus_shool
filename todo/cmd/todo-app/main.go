@@ -1,70 +1,110 @@
 package main
 
 import (
+	"context"
+	"database/sql"
 	"fmt"
-	"log"
-	"sync"
+	"net/http"
+	"os"
+	"os/signal"
+	"strconv"
+	"syscall"
 	"time"
 
-	"github.com/gin-gonic/gin"
-
-    "github.com/adsyandex/otus_shool/todo/internal/api"
-    "github.com/adsyandex/otus_shool/todo/internal/logger"
-    "github.com/adsyandex/otus_shool/todo/internal/storage"
-    "github.com/adsyandex/otus_shool/todo/internal/task"
-	"github.com/adsyandex/otus_shool/todo/internal/models"
+	"github.com/adsyandex/otus_shool/todo/internal/api"
+	"github.com/adsyandex/otus_shool/todo/internal/config"
+	"github.com/adsyandex/otus_shool/todo/internal/logger"
+	"github.com/adsyandex/otus_shool/todo/internal/service"
+	postgresstorage "github.com/adsyandex/otus_shool/todo/internal/storage/postgres"
+	"github.com/golang-migrate/migrate/v4"
+	postgresdriver "github.com/golang-migrate/migrate/v4/database/postgres"
+	"github.com/golang-migrate/migrate/v4/source/file"
+	_ "github.com/lib/pq"
 )
 
-
 func main() {
-	// Инициализация хранилища
-	store := storage.NewFileStorage("tasks.json")
+	cfg, err := config.Load()
+	if err != nil {
+		log := logger.New("error")
+		log.Fatal("Failed to load config: ", err)
+	}
 
-	// Инициализация менеджера задач
-	taskManager := task.NewTaskManager(store)
+	log := logger.New(cfg.Log.Level)
+	log.Info("Starting application version 1.0.0")
 
-	// Канал для передачи задач между горутинами
-	taskChannel := make(chan models.Task, 10)
-	var wg sync.WaitGroup
+	connStr := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
+		cfg.Postgres.Host, cfg.Postgres.Port, cfg.Postgres.User,
+		cfg.Postgres.Password, cfg.Postgres.DBName, cfg.Postgres.SSLMode)
 
-	// Горутина для обработки задач
-	wg.Add(1)
+	db, err := sql.Open("postgres", connStr)
+	if err != nil {
+		log.Fatal("Failed to connect to PostgreSQL: ", err)
+	}
+	defer db.Close()
+
+	if err := db.Ping(); err != nil {
+		log.Fatal("Failed to ping PostgreSQL: ", err)
+	}
+
+	if err := runMigrations(db); err != nil {
+		log.Fatal("Database migrations failed: ", err)
+	}
+
+	storage, err := postgresstorage.NewPostgresStorage(connStr)
+	if err != nil {
+		log.Fatal("Failed to initialize storage: ", err)
+	}
+
+	taskService := service.NewTaskService(storage)
+	router := api.NewRouter(taskService, log)
+
+	srv := &http.Server{
+		Addr:    ":" + strconv.Itoa(cfg.Server.Port),
+		Handler: router,
+	}
+
 	go func() {
-		defer wg.Done()
-		for t := range taskChannel {
-			log.Println("Обрабатываем задачу:", t.Name)
-			time.Sleep(500 * time.Millisecond) // Имитация работы
+		log.Info("Server starting on port ", cfg.Server.Port)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatal("HTTP server crashed: ", err)
 		}
 	}()
 
-	// Инициализация логирования
-	consoleLogger := &logger.ConsoleLogger{}
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
 
-	// Запуск логирования в отдельной горутине
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		logger.StartLogging(taskManager, consoleLogger)
-	}()
+	log.Info("Shutting down server...")
 
-	// Загрузка задач из хранилища
-	tasks, err := taskManager.GetTasks()
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Error("Server shutdown failed: ", err)
+	}
+
+	log.Info("Server stopped gracefully")
+}
+
+func runMigrations(db *sql.DB) error {
+	driver, err := postgresdriver.WithInstance(db, &postgresdriver.Config{})
 	if err != nil {
-			log.Fatalf("Ошибка загрузки задач: %v", err)
+		return fmt.Errorf("failed to create migration driver: %w", err)
 	}
-	for _, t := range tasks {
-			taskChannel <- t
+
+	fsrc, err := (&file.File{}).Open("file://migrations")
+	if err != nil {
+		return fmt.Errorf("failed to open migrations: %w", err)
 	}
-		
-		
 
-	// Запуск API-сервера
-	r := gin.Default()
-	api.SetupRouter(r, taskManager)
-	fmt.Println("Сервер запущен на http://localhost:8080")
-	r.Run(":8080")
+	m, err := migrate.NewWithInstance("file", fsrc, "postgres", driver)
+	if err != nil {
+		return fmt.Errorf("failed to create migration instance: %w", err)
+	}
 
-	// Закрываем канал задач и ждем завершения горутин
-	close(taskChannel)
-	wg.Wait()
+	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+		return fmt.Errorf("failed to run migrations: %w", err)
+	}
+
+	return nil
 }
