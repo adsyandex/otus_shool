@@ -1,41 +1,34 @@
 package logger
 
 import (
-    "log"
-    "time"
-    "github.com/adsyandex/otus_shool/todo/internal/models" // Импортируем models
-    "github.com/adsyandex/otus_shool/todo/internal/task" 
+	"fmt"
+	"github.com/rs/zerolog"
+	"os"
 )
 
-// Logger определяет интерфейс логирования
-type Logger interface {
-    LogTasks(tasks []models.Task) // Используем models.Task
+type Logger struct {
+	logger zerolog.Logger
 }
 
-// ConsoleLogger выводит лог в консоль
-type ConsoleLogger struct{}
+func New(level string) *Logger {
+	logLevel, err := zerolog.ParseLevel(level)
+	if err != nil {
+		logLevel = zerolog.InfoLevel
+	}
 
-// LogTasks логирует новые задачи в консоль
-func (cl *ConsoleLogger) LogTasks(tasks []models.Task) { // Используем models.Task
-    log.Printf("Добавленные задачи: %+v\n", tasks)
+	return &Logger{
+		logger: zerolog.New(os.Stdout).Level(logLevel).With().Timestamp().Logger(),
+	}
 }
 
-// StartLogging запускает процесс логирования
-func StartLogging(taskManager *task.TaskManager, logger Logger) {
-    var lastCount int
-    ticker := time.NewTicker(200 * time.Millisecond)
-    defer ticker.Stop()
+func (l *Logger) Info(args ...interface{}) {
+	l.logger.Info().Msg(fmt.Sprint(args...))
+}
 
-    for range ticker.C {
-        tasks, err := taskManager.GetTasks()
-        if err != nil {
-            log.Printf("Ошибка при получении задач: %v", err)
-            continue
-        }
+func (l *Logger) Error(args ...interface{}) {
+	l.logger.Error().Msg(fmt.Sprint(args...))
+}
 
-        if tasks != nil && len(tasks) > lastCount {
-            logger.LogTasks(tasks[lastCount:])
-            lastCount = len(tasks)
-        }
-    }
+func (l *Logger) Fatal(args ...interface{}) {
+	l.logger.Fatal().Msg(fmt.Sprint(args...))
 }
