@@ -39,7 +39,7 @@ todo/
 │ └── storage/ # Хранилища данных
 │ ├── contracts/ # Интерфейсы
 │ │ └── storage.go # Интерфейс Storage
-│ ├── mongo/ # (Устарело) Реализация для MongoDB
+│ ├── mongo/ #  Реализация для MongoDB
 │ │ └── mongo_storage.go
 │ └── postgres/ # Основное хранилище
 │ └── postgres_storage.go
