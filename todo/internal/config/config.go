@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"time"
+	"fmt"
 
 	"gopkg.in/yaml.v2"
 )
@@ -56,4 +57,19 @@ func Load() (*Config, error) {
 	}
 
 	return &cfg, nil
+}
+
+func MustLoad() *Config {
+	cfg, err := Load()
+	if err != nil {
+		panic(err)
+	}
+	return cfg
+}
+
+func (c PostgresConfig) ConnectionString() string {
+    return fmt.Sprintf(
+        "host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
+        c.Host, c.Port, c.User, c.Password, c.DBName, c.SSLMode,
+    )
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/adsyandex/otus_shool/todo/internal/storage/contracts"
 	"github.com/google/uuid"
 	_ "github.com/lib/pq"
+	"github.com/adsyandex/otus_shool/todo/internal/config"
 )
 
 type PostgresStorage struct {
@@ -251,4 +252,18 @@ func (s *PostgresStorage) Close(ctx context.Context) error {
 		return nil
 	}
 	return s.db.Close()
+}
+
+// MustNewStorage создает хранилище или паникует при ошибке
+func MustNewStorage(cfg config.PostgresConfig) *PostgresStorage {
+    connStr := fmt.Sprintf(
+        "host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
+        cfg.Host, cfg.Port, cfg.User, cfg.Password, cfg.DBName, cfg.SSLMode,
+    )
+    
+    storage, err := NewPostgresStorage(connStr)
+    if err != nil {
+        panic(fmt.Sprintf("failed to create postgres storage: %v", err))
+    }
+    return storage
 }
