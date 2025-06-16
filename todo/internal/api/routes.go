@@ -1,19 +1,33 @@
 package api
 
 import (
-	"github.com/adsyandex/otus_shool/todo/internal/task"
-
-	"github.com/gin-gonic/gin"
+	"github.com/adsyandex/otus_shool/todo/internal/logger"
+	"github.com/adsyandex/otus_shool/todo/internal/service"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 )
 
-// SetupRouter настраивает маршруты для API
-func SetupRouter(r *gin.Engine, tm *task.TaskManager) {
-    r.GET("/tasks", func(c *gin.Context) {
-        tasks, err := tm.GetTasks()
-        if err != nil {
-            c.JSON(500, gin.H{"error": err.Error()})
-            return
-        }
-        c.JSON(200, tasks)
-    })
+func NewRouter(service *service.TaskService, log *logger.Logger) *chi.Mux {
+	router := chi.NewRouter()
+	handler := NewHandler(service, log)
+
+	// Middleware
+	router.Use(middleware.RequestID)
+	router.Use(middleware.RealIP)
+	router.Use(middleware.Logger)
+	router.Use(middleware.Recoverer)
+
+	// Routes
+	router.Route("/tasks", func(r chi.Router) {
+		r.Post("/", handler.CreateTask)
+		r.Get("/", handler.ListTasks)
+
+		r.Route("/{id}", func(r chi.Router) {
+			r.Get("/", handler.GetTask)
+			r.Put("/", handler.UpdateTask)
+			r.Delete("/", handler.DeleteTask)
+		})
+	})
+
+	return router
 }
